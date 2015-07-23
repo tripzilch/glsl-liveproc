@@ -4,12 +4,15 @@ precision mediump float;
 
 #define PROCESSING_TEXTURE_SHADER
 
+#define TAU 6.283185307179586
+#define PHI 1.618033988749895
 uniform sampler2D texture;
 uniform vec2 C;
 uniform vec2 P;
 uniform vec2 M;
 //uniform float pixsize;
 uniform float zoom;
+uniform float time;
 
 varying vec4 vertColor;
 varying vec4 vertTexCoord;
@@ -46,13 +49,23 @@ vec3 traptex(vec3 T, float i) {
     //mix(tex(normalize(T.yz) * T.x), vec3(0), smoothstep(0.9, 1.0, T.x));
 }
 
+vec2 liss(float t, vec2 a) {
+    vec2 b = vec2(min(a.x, a.y) * PHI, max(a.x, a.y) * (PHI - 1.0));
+    return .625 * (sin(a * t) + .6 * sin(b * t));
+}
+
 void main (void) {
     //vec2 eps = vec2(pixsize * 0.5, 0.);
     vec3 color;
     float wsum = 0.0, w;
 
+    float tt = time * 0.25 + vertTexCoord.x;
+    vec2 CC = vec2(-1.0, 0.0) + 1.5 * liss(tt, vec2(2.1, 1.9));
+
     //vec2 noise2 = vec2(rand(gl_FragCoord.xy), rand(gl_FragCoord.yx + 1111.)) * 2.0 - 1.0;
-    vec2 Z = zoom * vertTexCoord.st + M;
+    vec2 MM = 1.5 * liss(tt, vec2(3.23, 2.87));
+    float theta = mod(tt * 0.23, TAU);
+    vec2 Z = MM + vec2(cos(theta), sin(theta)) * vertTexCoord.y * 4.0;
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
     vec2 Zprev;
@@ -68,7 +81,7 @@ void main (void) {
             Zprev = Z;
             Z.y *= 2.0 * Z.x;
             Z.x = Z2.x - Z2.y;
-            Z += C;
+            Z += CC;
             // calc squared magnitudes
             Z2 = Z * Z;
             Zmag2 = Z2.x + Z2.y;
@@ -91,6 +104,6 @@ void main (void) {
     // if (td < 1.0) {
     //     color = tex(0.4 * normalize(tZ) * td);
     // }
-    color *= step(BAILOUT2, Zmag2);
+    //color *= step(BAILOUT2, Zmag2);
     gl_FragColor = vec4(pow(color, gamma), 1.0);
 }
