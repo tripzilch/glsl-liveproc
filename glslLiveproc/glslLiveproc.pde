@@ -16,7 +16,7 @@ void setup() {
   R = H;
 
   textureMode(NORMAL);
-  PImage tex = loadImage("tex/ditherflare1024.png");
+  PImage tex = loadImage("tex/b512.png");
 
   bufq = createShape();
   bufq.beginShape();
@@ -38,7 +38,7 @@ String timestamp() {
 
 void reloadShader() {
   try {
-    PShader new_frag = loadShader("jstrip.frag");
+    PShader new_frag = loadShader("test.frag");
     new_frag.set("C", Cr, Ci);
     println("--- SHADER OK --------");
     frag = new_frag;
