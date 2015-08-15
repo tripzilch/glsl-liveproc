@@ -16,7 +16,7 @@ varying vec4 vertTexCoord;
 
 const vec3 igamma = vec3(2.2);
 const vec3 gamma = 1.0 / igamma;
-const float MAXITER = 70.;
+const float MAXITER = 400.;
 const float BAILOUT2 = 4096.0;
 const vec4 ones = vec4(1.0);
 const vec4 zeros = vec4(0.0);
@@ -35,14 +35,14 @@ vec3 tex(vec2 p) {
     return pow(texture2D(texture, .5 + p).xyz, igamma);
 }
 
-const float trap_r = .2;
+const float trap_r = .75;
 vec3 trap(vec2 Z, float i) {
     vec2 X = (Z - vec2(P)) * trap_r;
     return vec3(length(X), X);
 }
 
 vec3 traptex(vec3 T, float i) {
-    return tex(normalize(T.yz) * min(.48, T.x * pow(1.0 + i, 0.1)));
+    return tex(normalize(T.yz) * min(.8, T.x * pow(1.0 + i, 0.1)));
     //mix(tex(normalize(T.yz) * T.x), vec3(0), smoothstep(0.9, 1.0, T.x));
 }
 

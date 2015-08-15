@@ -6,7 +6,7 @@ int R;
 float aspect;
 
 void setup() {
-  int W = 768, H = 400;
+  int W = 960, H = 640;
   aspect = float(W) / float(H);
 
   size(W, H, P2D);
@@ -16,7 +16,7 @@ void setup() {
   R = H;
 
   textureMode(NORMAL);
-  PImage tex = loadImage("tex/ditherflare1024.png");
+  PImage tex = loadImage("tex/mandl3.png");
 
   bufq = createShape();
   bufq.beginShape();
@@ -38,7 +38,7 @@ String timestamp() {
 
 void reloadShader() {
   try {
-    PShader new_frag = loadShader("jstrip.frag");
+    PShader new_frag = loadShader("test.frag");
     new_frag.set("C", Cr, Ci);
     println("--- SHADER OK --------");
     frag = new_frag;
