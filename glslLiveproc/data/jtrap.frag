@@ -10,6 +10,7 @@ uniform vec2 P;
 uniform vec2 M;
 //uniform float pixsize;
 uniform float zoom;
+uniform float tzoom;
 
 varying vec4 vertColor;
 varying vec4 vertTexCoord;
@@ -35,15 +36,24 @@ vec3 tex(vec2 p) {
     return pow(texture2D(texture, .5 + p).xyz, igamma);
 }
 
-const float trap_r = .5;
+float trap_r = .5 * tzoom;
 vec3 trap(vec2 Z, float i) {
     vec2 X = (Z - vec2(P)) * trap_r;
     return vec3(length(X), X);
 }
 
-vec3 traptex(vec3 T, float i) {
-    return tex(normalize(T.yz) * min(.94336, T.x));
-    //mix(tex(normalize(T.yz) * T.x), vec3(0), smoothstep(0.9, 1.0, T.x));
+vec3 tex_circular(vec3 T, float i) {
+    // tex size 1615, radius = 807.5
+    // padding 0-6px off edge, radius > 801.5
+    // normalized 801.5 / 807.5 ~= 0.993
+    //
+    // fade to white:
+    return mix(tex(T.zy * vec2(-1,1)), vec3(1.0), smoothstep(.4963, .5, T.x));
+    // test:
+    // return tex((T.yz * min(T.x, .993) / T.x);
+    // return tex((T.yz * min(1.0, .993 / T.x));
+    // fade to black:
+    // mix(tex(normalize(T.yz) * T.x), vec3(0), smoothstep(0.9, 1.0, T.x));
 }
 
 void main (void) {
@@ -55,17 +65,16 @@ void main (void) {
     vec2 Z = zoom * vertTexCoord.st + M;
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
-    vec2 Zprev;
 
     // orbit trap vars
     float i = 0.0;
     vec3 min_T = trap(Z, i);
 //    color = mix(tex(normalize(min_T.yz) * min_T.x), vec3(0), smoothstep(0.9, 1.0, min_T.x));
-    color = traptex(min_T, i);
+    color = tex_circular(min_T, i);
     for (i = 1.; i < MAXITER; i++) {
         if (Zmag2 < BAILOUT2) {
             // iterate Z
-            Zprev = Z;
+            vec2 Zprev = Z;
             Z.y *= 2.0 * Z.x;
             Z.x = Z2.x - Z2.y;
             Z += C;
@@ -74,10 +83,10 @@ void main (void) {
             Zmag2 = Z2.x + Z2.y;
             // orbit trap
             vec3 T = trap(Z, i);
-            vec3 s = traptex(T, i);
+            vec3 c = tex_circular(T, i);
 
-            float amount = smoothstep(min_T.x, min_T.x * 1.2, T.x);
-            color = mix(s, color, amount);
+            float amount = smoothstep(min_T.x, min_T.x * 1.01, T.x);
+            color = mix(c, color, amount);
             min_T = (T.x < min_T.x) ? T : min_T;
             //w = exp(-32.0 * d) + 1.0E-10;
             //wsum += w;
