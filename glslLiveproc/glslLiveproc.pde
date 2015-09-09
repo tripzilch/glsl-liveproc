@@ -5,6 +5,8 @@ PGraphics buf;
 int R;
 float aspect;
 
+
+
 void setup() {
   int W = 768, H = 512;
   aspect = float(W) / float(H);
@@ -16,7 +18,7 @@ void setup() {
   R = H;
 
   textureMode(NORMAL);
-  PImage tex = loadImage("tex/botter1615k.png");
+  PImage tex = loadImage("tex/botter500k.png");
 
   bufq = createShape();
   bufq.beginShape();
@@ -72,12 +74,13 @@ void reloadTexture(File f) {
 }
 
 int reload_frame = 1, pmode = 1;
-boolean paused = false;
+boolean paused = false, autopilot = false;
 float Cr = -.71, Ci = .22, OCr = 0, OCi = 0;
 float Px = 0.0, Py = 0.0;
 float Mx = 0.0, My = 0.0;
 float zoom = 2.0, tzoom = 1.0, czoom = 1.0;
 void draw() {
+  double now = millis() / 1000.0;
   if (!paused) {
     if (reload_frame == 0) tint(1.0);
     if (reload_frame == 1) reloadShader();
@@ -96,6 +99,11 @@ void draw() {
       // Px = lerp(-2.5, 2.5, (1.0 * mouseX) / width);
       // Py = lerp(-2.5, 2.5, (1.0 * mouseY) / height);
     }
+    if (autopilot) {
+      Cr = lerp(-2.0, 1.0, (1.0 * mouseX) / width);
+      Ci = lerp(-1.5, 1.5, (1.0 * mouseY) / height);
+    }
+
 
     frag.set("C", OCr + czoom * Cr, OCi + czoom * Ci);
     frag.set("P", Px, Py);
@@ -166,6 +174,8 @@ void keyReleased() {
     adjustCZoom(1.0);
   } else if (keyCode == '0') {
     adjustCZoom(-1.0);
+  } else if (keyCode == 'A' /* 80 */) {
+    autopilot = !autopilot;
   } else if (keyCode == 'P' /* 80 */) {
     paused = !paused;
   } else if (keyCode == 'F' /* 70 */) {
@@ -188,7 +198,7 @@ void keyReleased() {
     pg.shader(frag);
     pg.scale(R * mul);
     pg.shape(bufq);
-    pg.save("/home/ritz/gfx/botter-images/2015 jaarboek/frac/btrap_" + timestamp() + ".png");
+    pg.save("/tmp/xtrap_" + timestamp() + ".png");
     pg.endDraw();
   }
 }

@@ -18,7 +18,7 @@ varying vec4 vertTexCoord;
 const vec3 igamma = vec3(2.2);
 const vec3 gamma = 1.0 / igamma;
 const float MAXITER = 100.;
-const float BAILOUT2 = 4096.0;
+const float BAILOUT2 = 256.0;
 const vec4 ones = vec4(1.0);
 const vec4 zeros = vec4(0.0);
 const float tx = 10.5 / 768.;
@@ -47,8 +47,8 @@ vec3 tex_circular(vec3 T, float i) {
     // padding 0-6px off edge, radius > 801.5
     // normalized 801.5 / 807.5 ~= 0.993
     //
-    // fade to white:
-    return mix(tex(T.zy * vec2(-1,1)), vec3(1.0), smoothstep(.4963, .5, T.x));
+    // fade
+    return mix(tex(T.yz * vec2(-1,1)), vec3(0.0), smoothstep(.4963, .5, T.x));
     // test:
     // return tex((T.yz * min(T.x, .993) / T.x);
     // return tex((T.yz * min(1.0, .993 / T.x));
