@@ -18,7 +18,7 @@ void setup() {
   R = H;
 
   textureMode(NORMAL);
-  PImage tex = loadImage("tex/botter500k.png");
+  PImage tex = loadImage("tex/splats3.png");
 
   bufq = createShape();
   bufq.beginShape();
@@ -33,6 +33,16 @@ void setup() {
   println("==== LIVEPROC ==", timestamp());
   println("SIZE = (", W, ",", H, ")");
 }
+
+/*float wobble(float x, float y, float z) {
+  float a = (float) Math.cos( 23 * x - 17 * y + 87);
+  float b = (float) Math.cos( 37 * y + 28 * z + 53);
+  float c = (float) Math.cos( 61 * z - 45 * x + 33);
+
+  return  ((float) Math.cos(17 * a + 31 * b + 39)
+         + (float) Math.cos(21 * b + 13 * c + 24)
+         + (float) Math.cos(19 * c + 5 * a + 15 - 43 * z)) * 0.33333;
+}*/
 
 String timestamp() {
   return nf(year(), 4) + "-" + nf(month(), 2) + "-" + nf(day(), 2) + "_" +nf(hour(), 2) + "." +nf(minute(), 2) + "." + nf(second(), 2);
@@ -99,11 +109,10 @@ void draw() {
       // Px = lerp(-2.5, 2.5, (1.0 * mouseX) / width);
       // Py = lerp(-2.5, 2.5, (1.0 * mouseY) / height);
     }
-    if (autopilot) {
-      Cr = lerp(-2.0, 1.0, (1.0 * mouseX) / width);
-      Ci = lerp(-1.5, 1.5, (1.0 * mouseY) / height);
-    }
-
+    // if (autopilot) {
+    //   Cr = lerp(-2.0, 1.0, wobble());
+    //   Ci = lerp(-1.5, 1.5, wobble());
+    // }
 
     frag.set("C", OCr + czoom * Cr, OCi + czoom * Ci);
     frag.set("P", Px, Py);

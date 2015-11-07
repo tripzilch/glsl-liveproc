@@ -17,7 +17,7 @@ varying vec4 vertTexCoord;
 
 const vec3 igamma = vec3(2.2);
 const vec3 gamma = 1.0 / igamma;
-const float MAXITER = 100.;
+const float MAXITER = 223.;
 const float BAILOUT2 = 256.0;
 const vec4 ones = vec4(1.0);
 const vec4 zeros = vec4(0.0);
@@ -48,7 +48,7 @@ vec3 tex_circular(vec3 T, float i) {
     // normalized 801.5 / 807.5 ~= 0.993
     //
     // fade
-    return mix(tex(T.yz * vec2(-1,1)), vec3(0.0), smoothstep(.4963, .5, T.x));
+    return mix(tex(T.yz * (1.0+exp(-0.3 * (i+2.0)))), vec3(1.0), smoothstep(.4963, .5, T.x));
     // test:
     // return tex((T.yz * min(T.x, .993) / T.x);
     // return tex((T.yz * min(1.0, .993 / T.x));
@@ -85,8 +85,9 @@ void main (void) {
             vec3 T = trap(Z, i);
             vec3 c = tex_circular(T, i);
 
-            float amount = smoothstep(min_T.x, min_T.x * 1.01, T.x);
-            color = mix(c, color, amount);
+            //float amount = smoothstep(min_T.x, min_T.x * 1.01, T.x);
+            color *= c;
+            //color = mix(c, color, amount);
             min_T = (T.x < min_T.x) ? T : min_T;
             //w = exp(-32.0 * d) + 1.0E-10;
             //wsum += w;
