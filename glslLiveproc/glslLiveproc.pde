@@ -1,48 +1,86 @@
 PImage tex;
 PShader frag;
-PShape bufq;
-PGraphics buf;
+PShape quad;
+PGraphics backbuf;
 int R;
 float aspect;
-
-
 
 void setup() {
   int W = 768, H = 512;
   aspect = float(W) / float(H);
-
-  size(W, H, P2D);
-  buf = createGraphics(W, H, P2D);
-  colorMode(RGB, 1.0);
-
   R = H;
 
-  textureMode(NORMAL);
-  PImage tex = loadImage("tex/splats3.png");
+  size(W, H, P2D);
+  colorMode(RGB, 1.0);
 
-  bufq = createShape();
-  bufq.beginShape();
-  bufq.noStroke();
-  bufq.texture(tex);
-  bufq.vertex(0, 0, -aspect, -1);
-  bufq.vertex(0, 1, -aspect,  1);
-  bufq.vertex(aspect, 1,  aspect,  1);
-  bufq.vertex(aspect, 0,  aspect, -1);
-  bufq.endShape(CLOSE);
+  textureMode(NORMAL);
+  noStroke();
+  backbuf = createGraphics(W/2, H/2, P2D);
+  backbuf.noStroke();
+  backbuf.textureMode(NORMAL);
+  PImage tex = loadImage("tex/splats3-fm.png");
+
+  quad = createShape();
+  quad.beginShape();
+  quad.noStroke();
+  quad.texture(tex);
+  quad.vertex(0, 0, -aspect, -1);
+  quad.vertex(0, 1, -aspect,  1);
+  quad.vertex(aspect, 1,  aspect,  1);
+  quad.vertex(aspect, 0,  aspect, -1);
+  quad.endShape(CLOSE);
 
   println("==== LIVEPROC ==", timestamp());
   println("SIZE = (", W, ",", H, ")");
 }
 
-/*float wobble(float x, float y, float z) {
-  float a = (float) Math.cos( 23 * x - 17 * y + 87);
-  float b = (float) Math.cos( 37 * y + 28 * z + 53);
-  float c = (float) Math.cos( 61 * z - 45 * x + 33);
+int reload_frame = 1, pmode = 1;
+boolean paused = false;
+float Cr = -.71, Ci = .22, OCr = 0, OCi = 0;
+float Px = 0.0, Py = 0.0;
+float Mx = 0.0, My = 0.0;
+float zoom = 2.0, tzoom = 1.0, czoom = 1.0;
+void draw() {
+  double now = millis() / 1000.0;
+  if (!paused) {
+    if (reload_frame == 0) tint(1.0);
+    if (reload_frame == 1) reloadShader();
+    if (reload_frame >= 1) {
+      tint(0.5);
+      reload_frame--;
+    }
 
-  return  ((float) Math.cos(17 * a + 31 * b + 39)
-         + (float) Math.cos(21 * b + 13 * c + 24)
-         + (float) Math.cos(19 * c + 5 * a + 15 - 43 * z)) * 0.33333;
-}*/
+    if (pmode == 1) {
+      Cr = lerp(-2.0, 1.0, (1.0 * mouseX) / width);
+      Ci = lerp(-1.5, 1.5, (1.0 * mouseY) / height);
+    }
+    if (pmode == 2) {
+      Px = 2.0 * lerp(-aspect, aspect, (1.0 * mouseX) / width);
+      Py = 2.0 * lerp(-1.0, 1.0, (1.0 * mouseY) / height);
+    }
+
+    frag.set("C", OCr + czoom * Cr, OCi + czoom * Ci);
+    frag.set("P", Px, Py);
+    frag.set("M", Mx, My);
+    frag.set("zoom", zoom);
+    frag.set("tzoom", tzoom);
+    frag.set("time", millis() * 0.001);
+
+    backbuf.beginDraw();
+      backbuf.shader(frag);
+      backbuf.scale(backbuf.height);
+      backbuf.shape(quad);
+      //backbuf.beginShape();
+      //  backbuf.texture(tex);
+      //  backbuf.vertex(0, 0, -aspect, -1);
+      //  backbuf.vertex(0, 1, -aspect,  1);
+      //  backbuf.vertex(aspect, 1,  aspect,  1);
+      //  backbuf.vertex(aspect, 0,  aspect, -1);
+      //backbuf.endShape(CLOSE);
+    backbuf.endDraw();
+    image(backbuf, 0, 0, width, height);
+  }
+}
 
 String timestamp() {
   return nf(year(), 4) + "-" + nf(month(), 2) + "-" + nf(day(), 2) + "_" +nf(hour(), 2) + "." +nf(minute(), 2) + "." + nf(second(), 2);
@@ -66,15 +104,15 @@ void reloadTexture(File f) {
   try {
     PImage new_tex = loadImage(f.getAbsolutePath());
     tex = new_tex;
-      bufq = createShape();
-      bufq.beginShape();
-      bufq.noStroke();
-      bufq.texture(tex);
-      bufq.vertex(0, 0, -aspect, -1);
-      bufq.vertex(0, 1, -aspect,  1);
-      bufq.vertex(aspect, 1,  aspect,  1);
-      bufq.vertex(aspect, 0,  aspect, -1);
-      bufq.endShape(CLOSE);
+      quad = createShape();
+      quad.beginShape();
+      quad.noStroke();
+      quad.texture(tex);
+      quad.vertex(0, 0, -aspect, -1);
+      quad.vertex(0, 1, -aspect,  1);
+      quad.vertex(aspect, 1,  aspect,  1);
+      quad.vertex(aspect, 0,  aspect, -1);
+      quad.endShape(CLOSE);
     println("--- TEXTURE OK --------");
   } catch (java.lang.RuntimeException e) {
     println("--- TEX LOAD ERROR ----");
@@ -83,53 +121,6 @@ void reloadTexture(File f) {
   }
 }
 
-int reload_frame = 1, pmode = 1;
-boolean paused = false, autopilot = false;
-float Cr = -.71, Ci = .22, OCr = 0, OCi = 0;
-float Px = 0.0, Py = 0.0;
-float Mx = 0.0, My = 0.0;
-float zoom = 2.0, tzoom = 1.0, czoom = 1.0;
-void draw() {
-  double now = millis() / 1000.0;
-  if (!paused) {
-    if (reload_frame == 0) tint(1.0);
-    if (reload_frame == 1) reloadShader();
-    if (reload_frame >= 1) {
-      tint(0.5);
-      reload_frame--;
-    }
-
-    if (pmode == 1) {
-      Cr = lerp(-2.0, 1.0, (1.0 * mouseX) / width);
-      Ci = lerp(-1.5, 1.5, (1.0 * mouseY) / height);
-    }
-    if (pmode == 2) {
-      Px = 2.0 * lerp(-aspect, aspect, (1.0 * mouseX) / width);
-      Py = 2.0 * lerp(-1.0, 1.0, (1.0 * mouseY) / height);
-      // Px = lerp(-2.5, 2.5, (1.0 * mouseX) / width);
-      // Py = lerp(-2.5, 2.5, (1.0 * mouseY) / height);
-    }
-    // if (autopilot) {
-    //   Cr = lerp(-2.0, 1.0, wobble());
-    //   Ci = lerp(-1.5, 1.5, wobble());
-    // }
-
-    frag.set("C", OCr + czoom * Cr, OCi + czoom * Ci);
-    frag.set("P", Px, Py);
-    frag.set("M", Mx, My);
-    frag.set("zoom", zoom);
-    frag.set("tzoom", tzoom);
-    frag.set("time", millis() * 0.001);
-
-
-    buf.beginDraw();
-    buf.shader(frag);
-    buf.scale(R);
-    buf.shape(bufq);
-    buf.endDraw();
-    image(buf, 0, 0);
-  }
-}
 
 void mouseWheel(MouseEvent event) {
   float e = event.getCount();
@@ -183,8 +174,6 @@ void keyReleased() {
     adjustCZoom(1.0);
   } else if (keyCode == '0') {
     adjustCZoom(-1.0);
-  } else if (keyCode == 'A' /* 80 */) {
-    autopilot = !autopilot;
   } else if (keyCode == 'P' /* 80 */) {
     paused = !paused;
   } else if (keyCode == 'F' /* 70 */) {
@@ -193,20 +182,23 @@ void keyReleased() {
     pmode = 1;
   } else if (keyCode == 'V' /* 86 */) {
     pmode = 2;
+  } else if (keyCode == 'H' /* 86 */) {
+    int divisor = (backbuf.height < height) ? 1 : 2;
+    backbuf = createGraphics(width / divisor, height / divisor, P2D);
   } else if (keyCode == 'S' /* 83 */) {
     int mul = 5;
     PGraphics pg = createGraphics(mul * width, mul * height, P2D);
     pg.beginDraw();
     pg.shader(frag);
     pg.scale(R * mul);
-    pg.shape(bufq);
+    pg.shape(quad);
     pg.save("/tmp/tmp.png");
     pg.endDraw();
 
     pg.beginDraw();
     pg.shader(frag);
     pg.scale(R * mul);
-    pg.shape(bufq);
+    pg.shape(quad);
     pg.save("/tmp/xtrap_" + timestamp() + ".png");
     pg.endDraw();
   }
