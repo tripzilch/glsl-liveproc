@@ -32,26 +32,20 @@ float rand(vec2 co) {
     return fract(sin(sn) * c);
 }
 
-vec3 tex(vec2 p, float i) {
-    vec2 r = .5 + p;
-    //r += texOffset * vec2(rand(gl_FragCoord.xy + i * 7.0), rand(gl_FragCoord.xy + 2323.0 + i * 13.0)) * 2.0;
-    return pow(texture2D(texture, r).xyz, igamma);
-}
-
 float trap_r = .5 * tzoom;
 vec3 trap(vec2 Z, float i) {
     vec2 X = (Z - vec2(P)) * trap_r;
     return vec3(length(X), X);
 }
 
+vec3 tex(vec2 p, float i) {
+    vec2 r = .5 + p;
+    //r += texOffset * vec2(rand(gl_FragCoord.xy + i * 7.0), rand(gl_FragCoord.xy + 2323.0 + i * 13.0)) * 2.0;
+    return pow(texture2D(texture, r).xyz, igamma);
+}
 vec3 tex_circular(vec3 T, float i) {
     // fade
-    return mix(tex(T.yz, i), vec3(1.0), smoothstep(.4963, .5, T.x));
-    // test:
-    // return tex((T.yz * min(T.x, .993) / T.x);
-    // return tex((T.yz * min(1.0, .993 / T.x));
-    // fade to black:
-    // mix(tex(normalize(T.yz) * T.x), vec3(0), smoothstep(0.9, 1.0, T.x));
+    return mix(texture2D(texture, .5 + T.yz).xyz, vec3(0.0,1.0,0.0), smoothstep(.4963, .5, T.x));
 }
 
 void main (void) {
@@ -68,6 +62,7 @@ void main (void) {
     float i = 0.0;
     vec3 min_T = trap(Z, i);
 //    color = mix(tex(normalize(min_T.yz) * min_T.x), vec3(0), smoothstep(0.9, 1.0, min_T.x));
+    // color = vec3(0.0,1.0,0.0);
     color = tex_circular(min_T, i);
     for (i = 1.; i < MAXITER; i++) {
         if (Zmag2 < BAILOUT2) {
@@ -82,10 +77,10 @@ void main (void) {
             // orbit trap
             vec3 T = trap(Z, i);
             vec3 c = tex_circular(T, i);
-
-            //float amount = smoothstep(min_T.x, min_T.x * 1.01, T.x);
+            color = vec3(max(color.x, c.x), color.y * c.y, c.z);
+            //float amount = smoothstep(min_T.x, min_T.x * 1.01, T.x); <-- these for fade
             //color = mix(c, color, amount);
-            color *= pow(c, vec3(0.75));
+            //color *= c;
             //color = min(color, c);
             //color = max(color, c);
             min_T = (T.x < min_T.x) ? T : min_T;
@@ -102,6 +97,12 @@ void main (void) {
     // if (td < 1.0) {
     //     color = tex(0.4 * normalize(tZ) * td);
     // }
-    color *= step(BAILOUT2, Zmag2);
-    gl_FragColor = vec4(pow(color, gamma), 1.0);
+    vec3 splat = vec3(0.35,.3,.25);
+    splat *= (.6 + .4 * rand(gl_FragCoord.xy * 0.0112358));
+    splat *= smoothstep(.2, .98, color.x);
+    splat = mix(splat, vec3(1.0), smoothstep(.6,0.9,color.y));
+    splat.b *= step(BAILOUT2, Zmag2);
+    gl_FragColor = vec4(splat, 1.0);
+    //color *= step(BAILOUT2, Zmag2);
+    //gl_FragColor = vec4(pow(color, gamma), 1.0);
 }
