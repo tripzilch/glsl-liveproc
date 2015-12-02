@@ -1,0 +1,472 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"wid",
+				"width"
+			],
+			[
+				"floa",
+				"floatBitsToUint"
+			],
+			[
+				"go",
+				"Gothic"
+			],
+			[
+				"tex",
+				"tex_scale"
+			],
+			[
+				"gl_",
+				"gl_FragCoord"
+			],
+			[
+				"u_",
+				"u_mouse"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "glslLiveproc.pde",
+			"settings":
+			{
+				"buffer_size": 6916,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "data/jtrap.frag",
+			"settings":
+			{
+				"buffer_size": 2697,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/Processing/Build Systems/Processing.sublime-build",
+					""
+				],
+				[
+					"Packages/Processing/Build Systems/Processing.sublime-build",
+					"Re-run sketch"
+				],
+				[
+					"Packages/Processing/Build Systems/Processing.sublime-build",
+					"Run sketch (Processing 3 only)"
+				],
+				[
+					"Packages/Processing/Build Systems/Processing.sublime-build",
+					"Run sketch fullscreen"
+				],
+				[
+					"Packages/Processing/Build Systems/Processing.sublime-build",
+					"Export sketch as application"
+				]
+			],
+			[
+				"Packages/Processing/Build Systems/Processing.sublime-build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/lessc/lessc.sublime-build",
+					""
+				],
+				[
+					"Packages/lessc/lessc.sublime-build",
+					"Non-Minified"
+				]
+			],
+			[
+				"Packages/lessc/lessc.sublime-build",
+				""
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 349.0,
+		"last_filter": "proces",
+		"selected_items":
+		[
+			[
+				"proces",
+				"Set Syntax: Processing"
+			],
+			[
+				"side",
+				"View: Toggle Open Files in Side Bar"
+			],
+			[
+				"FORMA",
+				"CodeFormatter: Format as Javascript Syntax"
+			],
+			[
+				"isnta",
+				"Package Control: Install Package"
+			],
+			[
+				"pro",
+				"Build With: Processing - Re-run sketch"
+			],
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"ins",
+				"Package Control: Install Package"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"coffee",
+				"Set Syntax: CoffeeScript"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"packag",
+				"Package Control: List Packages"
+			],
+			[
+				"gl",
+				"Open fragment shader with GLSLViewer"
+			],
+			[
+				"inst",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 446.0
+	},
+	"console":
+	{
+		"height": 356.0,
+		"history":
+		[
+			"1.0 / (1 << 23)",
+			"1 << 23",
+			"1.0 <<  34",
+			"hex((1 << 23) - 1)",
+			"hex(1 << 23 - 1)",
+			"hex(1 << 23)",
+			"hex(1 << 24)",
+			"1 << 24",
+			"1 >> 24",
+			"hex(1 >> 24 - 1)",
+			"0x1000000",
+			"0x100",
+			"hex(2166136261)",
+			"hex(16777619)",
+			"468./512",
+			"482*4 + 643",
+			"482 * 64 + 643",
+			"483 * 64 + 643",
+			"483 * 63 + 643",
+			"482.25 * 63 + 643",
+			"643*.75",
+			"'%.7f' % (0.5 * 0.5 ** 0.5)",
+			"'%.6f' % (0.5 * 0.5 ** 0.5)",
+			"'%.5f' % (0.5 * 0.5 ** 0.5)",
+			"'%6.4f' % (0.5 * 0.5 ** 0.5)",
+			"'%6.4f' % 0.5 * 0.5 ** 0.5",
+			"0.5 * 0.5 ** 0.5",
+			"0.25 ** 0.5",
+			"0.5 ** 0.5",
+			"sqrt(0.5)",
+			"import urllib.request,os,hashlib; h = 'eb2297e1a458f27d836c04bb0cbaf282' + 'd0e7a3098092775ccb37ca9d6b2e4b7d'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by) "
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/gup/git/glsl-liveproc/glslLiveproc",
+		"/home/gup/git/glsl-liveproc/glslLiveproc/data"
+	],
+	"file_history":
+	[
+		"/home/gup/evux/source/test.pkg",
+		"/home/gup/evux/source/evux.py",
+		"/home/gup/git/glsl-liveproc/glslLiveproc/data/jtrap.frag",
+		"/home/gup/git/glsl-liveproc/glslLiveproc/glslLiveproc.pde",
+		"/home/gup/ownCloud/gebruikers/Filip/stylesheet.css",
+		"/home/gup/ownCloud/gebruikers/Filip/index.html",
+		"/home/gup/ownCloud/gebruikers/Filip/kaas/index.html",
+		"/home/gup/ownCloud/gebruikers/Filip/kaas/main.css",
+		"/home/gup/help",
+		"/home/gup/ownCloud/gebruikers/Annejan/spaaaaaaaace/spaaaaaaaace.pde",
+		"/home/gup/ownCloud/gebruikers/Annejan/zand/zand.pde",
+		"/home/gup/ownCloud/gebruikers/Annejan/lorenzvlinder/lorenzvlinder.pde",
+		"/home/gup/ownCloud/gebruikers/Annejan/birdcloud/Birdcloudlogo/Birdcloudlogo.pde",
+		"/home/gup/ownCloud/gebruikers/Piter/processing/CFD1/CFD1.pde",
+		"/media/gup/ANNEJAN/flarpicles/flarpicles.pde",
+		"/media/gup/ANNEJAN/flarpicles/Particle.pde",
+		"/home/gup/ownCloud/gebruikers/Annejan/flarpicles/Particle.pde",
+		"/home/gup/ownCloud/gebruikers/Annejan/flarpicles/flarpicles.pde",
+		"/home/gup/git/glsl-liveproc/glslLiveproc/data/test.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/blabs.frag",
+		"/home/gup/git/glsl-liveproc/glslLiveproc/template.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/liveproc/data/jtrip.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/processing/pathtracer/pathtracer.pde",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/liveproc/liveproc.pde",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/liveproc/data/jtrap.frag",
+		"/home/gup/maatrensite/style.css",
+		"/home/gup/maatrensite/index.html",
+		"/home/gup/maatrensite/stylesheet.css",
+		"/home/gup/maatrensite/style.less",
+		"/home/gup/.config/sublime-text-3/Packages/User/Preferences.sublime-settings",
+		"/home/gup/.config/sublime-text-3/Packages/Default/Preferences.sublime-settings",
+		"/home/gup/Downloads/Maartenoosting.nl.html",
+		"/home/gup/Downloads/Maartenoosting.nl_files/less.js",
+		"/home/gup/Desktop/youtube-dl-api/st00f.coffee",
+		"/home/gup/git/glsl-liveproc/glslLiveproc/data/tex/radialmetal.png",
+		"/home/gup/Desktop/youtube-dl-api/login.html",
+		"/home/gup/ownCloud/gebruikers/Piter/im.txt",
+		"/home/gup/ownCloud/gebruikers/Piter/Google Eemshaven.txt",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/glrender/data/julia-DE-render.frag",
+		"/home/gup/Downloads/julia-DE(1).frag",
+		"/home/gup/Downloads/julia-DE.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/glrender/data/julia-DE_conflict-20150606-132446.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/glrender/data/julia-trippy.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/julia-DE-1.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/julia-DE.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/julia-DE_conflict-20150523-161109.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/JuliaDE/juliaDE2.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/webgl.html",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/julia-trippy.frag",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/test.frag",
+		"/home/gup/.local/share/processing/modes/java/examples/Topics/Shaders/EdgeDetect/data/edges.glsl",
+		"/home/gup/ownCloud/gebruikers/Piter/gl-shaders/julia.frag"
+	],
+	"find":
+	{
+		"height": 23.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"BAILOUT2",
+			"trap_r",
+			"reloadTexture",
+			"mvx",
+			"i ",
+			"i",
+			"i.y",
+			"i.x",
+			"i.y",
+			".x",
+			"1337",
+			"05",
+			"scro",
+			"  ",
+			"\\",
+			"\\n"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			" ",
+			"",
+			" "
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "glslLiveproc.pde",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6916,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								306,
+								306
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Processing/Syntaxes/Processing.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "data/jtrap.frag",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2697,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/OpenGL Shading Language (GLSL)/GLSL.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 23.0
+	},
+	"input":
+	{
+		"height": 31.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 344.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "Packages/Processing/Build Systems/Processing.sublime-build",
+	"project": "glslLiveproc.sublime-project",
+	"replace":
+	{
+		"height": 42.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 446.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 339.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 240.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

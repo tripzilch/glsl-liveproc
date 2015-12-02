@@ -17,7 +17,7 @@ varying vec4 vertTexCoord;
 
 const vec3 igamma = vec3(2.2);
 const vec3 gamma = 1.0 / igamma;
-const float MAXITER = 223.;
+const float MAXITER = 350.;
 const float BAILOUT2 = 256.0;
 const vec4 ones = vec4(1.0);
 const vec4 zeros = vec4(0.0);
@@ -38,28 +38,19 @@ vec3 tex(vec2 p, float i) {
     return pow(texture2D(texture, r).xyz, igamma);
 }
 
-float trap_r = .5 * tzoom;
 vec3 trap(vec2 Z, float i) {
-    vec2 X = (Z - vec2(P)) * trap_r;
-    return vec3(length(X), X);
+    vec2 X = (Z - vec2(P)) * .5 * tzoom;
+    return vec3(X, length(X));
 }
 
 vec3 tex_circular(vec3 T, float i) {
-    // fade
-    return mix(tex(T.yz, i), vec3(1.0), smoothstep(.4963, .5, T.x));
-    // test:
-    // return tex((T.yz * min(T.x, .993) / T.x);
-    // return tex((T.yz * min(1.0, .993 / T.x));
-    // fade to black:
-    // mix(tex(normalize(T.yz) * T.x), vec3(0), smoothstep(0.9, 1.0, T.x));
+    return mix(tex(T.xy, i), vec3(1.0), smoothstep(.4963, .5, T.z));
 }
 
 void main (void) {
-    //vec2 eps = vec2(pixsize * 0.5, 0.);
     vec3 color;
     float wsum = 0.0, w;
 
-    //vec2 noise2 = vec2(rand(gl_FragCoord.xy), rand(gl_FragCoord.yx + 1111.)) * 2.0 - 1.0;
     vec2 Z = zoom * vertTexCoord.st + M;
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
@@ -85,10 +76,10 @@ void main (void) {
 
             //float amount = smoothstep(min_T.x, min_T.x * 1.01, T.x);
             //color = mix(c, color, amount);
-            color *= pow(c, vec3(0.75));
+            color *= c; //pow(c, vec3(0.75));
             //color = min(color, c);
             //color = max(color, c);
-            min_T = (T.x < min_T.x) ? T : min_T;
+            min_T = (T.z < min_T.z) ? T : min_T;
             //w = exp(-32.0 * d) + 1.0E-10;
             //wsum += w;
             //tZ += w * Z;
@@ -102,6 +93,6 @@ void main (void) {
     // if (td < 1.0) {
     //     color = tex(0.4 * normalize(tZ) * td);
     // }
-    color *= step(BAILOUT2, Zmag2);
+    // color *= smoothstep(BAILOUT2 * .9, BAILOUT2, Zmag2);
     gl_FragColor = vec4(pow(color, gamma), 1.0);
 }
