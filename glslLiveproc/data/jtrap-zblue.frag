@@ -7,14 +7,11 @@ uniform sampler2D texture;
 uniform vec2 texOffset; // vec2(1/width,1/height)
 uniform vec2 C;
 uniform vec2 P;
-uniform float min_iter;
 uniform vec2 M;
-uniform float count;
+//uniform float pixsize;
 uniform float zoom;
-uniform float tex_zoom;
-uniform float tex_angle;
-uniform float alpha;
-uniform float jitter_amount;
+uniform float tzoom;
+uniform float tangle;
 
 varying vec4 vertColor;
 varying vec4 vertTexCoord;
@@ -35,43 +32,41 @@ float rand(vec2 co) {
     float c = 43758.5453;
     float dt= dot(co.xy ,vec2(a,b));
     float sn= mod(dt,3.14);
-    return fract(sin(sn) * c) - 0.5;
+    return fract(sin(sn) * c);
 }
-float randfc(float k) { return rand(gl_FragCoord.xy + k * 48.3); }
-
-vec2 randfc2(float k) { return vec2(rand(gl_FragCoord.xy + k * 29.9 - 23.5),
-                                    rand(gl_FragCoord.xy + k * 127.6)); }
 
 vec3 tex(vec2 p, float i) {
     //float a = i * (TAU / PHI / PHI);
-    mat2 rot = mat2( cos(tex_angle), -sin(tex_angle),
-                     sin(tex_angle),  cos(tex_angle));
+    mat2 rot = mat2( cos(tangle), -sin(tangle),
+                     sin(tangle),  cos(tangle));
     vec2 r = .5 + rot * p;
     //r += texOffset * vec2(rand(gl_FragCoord.xy + i * 7.0), rand(gl_FragCoord.xy + 2323.0 + i * 13.0)) * 2.0;
     return pow(texture2D(texture, r).xyz, igamma);
 }
 
 vec3 trap(vec2 Z, float i) {
-    vec2 X = (Z - vec2(P)) * .5 * tex_zoom;
+    vec2 X = (Z - vec2(P)) * .5 * tzoom;
     return vec3(X, length(X));
 }
 
 vec3 tex_circular(vec3 T, float i) {
-    //return mix(tex(T.xy, i), vec3(0.0), smoothstep(.49, .5, T.z));
-    return mix(tex(T.xy, i), vec3(1.0), smoothstep(.4963, .5, T.z));
+    return mix(tex(T.xy, i), vec3(1.0), smoothstep(.49, .5, T.z));
+    //return mix(tex(T.xy, i), vec3(1.0), smoothstep(.4, .5, T.z));
 }
 
 void main (void) {
     vec3 color;
     float wsum = 0.0, w;
 
-    vec2 Z = M + zoom * (vertTexCoord.st + jitter_amount * randfc2(count));
+    vec2 Z = zoom * vertTexCoord.st + M;
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
 
     // orbit trap vars
     float i = 0.0;
-    color = (i >= min_iter) ? tex_circular(trap(Z, i), i) : vec3(1.0);
+    vec3 min_T = trap(Z, i);
+//    color = mix(tex(normalize(min_T.yz) * min_T.x), vec3(0), smoothstep(0.9, 1.0, min_T.x));
+    color = tex_circular(min_T, i);
     for (i = 1.; i < MAXITER; i++) {
         if (Zmag2 < BAILOUT2) {
             // iterate Z
@@ -82,15 +77,29 @@ void main (void) {
             // calc squared magnitudes
             Z2 = Z * Z;
             Zmag2 = Z2.x + Z2.y;
-            if (i >= min_iter) {// orbit trap
-                vec2 X = (Z - vec2(P)) * .5 * tex_zoom;
-                //vec3 c = tex_circular(trap(Z, i), i);
-                vec3 c = mix(tex(X, i), vec3(1.0), smoothstep(.4963, .5, length(X)));
-                //c = tex(X, i);
-                color *= c; //pow(c, vec3(0.75));
-            }
+            // orbit trap
+            vec3 T = trap(Z, i);
+            vec3 c = tex_circular(T, i);
+
+            float amount = smoothstep(min_T.z * 0.60, min_T.z * 0.80, T.z);
+            color = mix(c, color*c, amount);
+            //color *= c; //pow(c, vec3(0.75));
+            //color = min(color, c);
+            //color = max(color, c);
+            min_T = (T.z < min_T.z) ? T : min_T;
+            //w = exp(-32.0 * d) + 1.0E-10;
+            //wsum += w;
+            //tZ += w * Z;
+            //td += w * d;
+            //color += w * tex(Z - P);
         }
     }
+    //vec3 cf = 22.0 * vec3(.8,.9,1.0);
+    //color = .5 + .5 * cos(td * exp(-td) * cf);
+    //color /= wsum > 0.0 ? wsum : 1.0;
+    // if (td < 1.0) {
+    //     color = tex(0.4 * normalize(tZ) * td);
+    // }
     color *= step(BAILOUT2, Zmag2);
-    gl_FragColor = vec4(pow(color, gamma), alpha);
+    gl_FragColor = vec4(pow(color, gamma), 1.0);
 }

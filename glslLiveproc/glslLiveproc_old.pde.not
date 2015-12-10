@@ -1,59 +1,37 @@
-Julia julia;
-PGraphics buf_hi, buf_lo;
+PImage tex;
+String tex_path;
+PShader frag;
+String frag_path = "jtrap.frag";
+PGraphics backbuf;
+int R;
+float aspect;
 
 void setup() {
-  size(768, 512, P2D);
+  int W = 768, H = 512;
+  aspect = float(W) / float(H);
+  R = H;
+
+  size(W, H, P2D);
   colorMode(RGB, 1.0);
+  textureMode(NORMAL);
+  noStroke();
 
-  textureMode(NORMAL);  // unsure if needed
-  noStroke();           // unsure if needed
+  backbuf = createGraphics(W/2, H/2, P2D);
+  tex_path = "tex/splats3.png";
+  tex = loadImage(tex_path);
 
-  buf_hi = createGraphics(width, height, P2D);
-  buf_lo = createGraphics(width / 2, height / 2, P2D);
+/*  quad = createShape();
+  quad.beginShape();
+  quad.noStroke();
+  quad.texture(tex);
+  quad.vertex(0, 0, -aspect, -1);
+  quad.vertex(0, 1, -aspect,  1);
+  quad.vertex(aspect, 1,  aspect,  1);
+  quad.vertex(aspect, 0,  aspect, -1);
+  quad.endShape(CLOSE);*/
 
-  julia = new Julia("jtrap.frag", "tex/splats3.png");
-
-  println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
-}
-
-class Julia {
-  String frag_path = "safe.frag";
-  PShader frag = loadShader("safe.frag");
-  String tex_path;
-  PImage tex;
-
-  Julia (String frag_path, String tex_path) {
-    this.loadShader(frag_path);
-    this.loadTexture(tex_path);
-  }
-
-  void loadTexture(File f) { this.loadTexture(f.getAbsolutePath()); }
-  void loadTexture(String tex_path) {
-    this.tex_path = tex_path;
-    this.tex = loadImage(tex_path);
-  }
-
-  void loadShader(String frag_path) {
-    try {
-      PShader new_frag = loadShader(frag_path);
-      new_frag.set("zoom", zoom);
-      println("--- SHADER OK --------");
-      if (new_frag != null) {
-        this.frag = new_frag;
-        this.frag_path = frag_path;
-        println(timestamp(), " === SHADER OK == ", frag_path);
-      }
-    } catch (java.lang.RuntimeException e) {
-      println(timestamp(), " === SHADER ERROR == ", frag_path);
-      println(e.getMessage());
-      println("== === === === === === ==");
-    }
-  }
-
-  void render(PGraphics buf) {
-  }
-
-
+  println("==== LIVEPROC ==", timestamp());
+  println("SIZE = (", W, ",", H, ")");
 }
 
 int reload_frame = 1, pmode = 1;
@@ -208,10 +186,7 @@ void keyReleased() {
     PGraphics pg = createGraphics(mul * width, mul * height, P2D);
     JSONObject par = new JSONObject();
     String filename = "qtrap_" + timestamp();
-    String json_filename = "save/" + filename + ".json";
-    String image_filename = "/tmp/" + filename + ".png";
-
-    println(timestamp(), " === writing", json_filename);
+    println("WRITING " + filename + ".json");
     par.setString("tex_path", tex_path);
     par.setString("frag_path", frag_path);
     par.setFloat("Cr", OCr + czoom * Cr);
@@ -222,8 +197,7 @@ void keyReleased() {
     par.setFloat("My", My);
     par.setFloat("zoom", zoom);
     par.setFloat("tzoom", tzoom);
-    saveJSONObject(par, json_filename);
-
+    saveJSONObject(par, filename + ".json");
     println("RENDERING *" + mul + " @ " + pg.width + "x" + pg.height);
     pg.beginDraw();
     pg.background(0);
@@ -243,8 +217,8 @@ void keyReleased() {
     print("endDraw. ");
     pg.loadPixels();
     print("Loaded pixels. ");
-    println(timestamp(), " === writing", image_filename, "...");
-    pg.save(image_filename);
+    print("writing " + filename + ".png ...");
+    pg.save("/tmp/" + filename + ".png");
     println("done. ");
   }
 }

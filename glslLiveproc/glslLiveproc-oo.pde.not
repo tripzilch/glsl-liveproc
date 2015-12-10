@@ -1,6 +1,6 @@
-
 Julia julia;
 PGraphics buf_hi, buf_lo, buf;
+
 
 void setup() {
   size(768, 512, P2D);
@@ -20,15 +20,13 @@ void setup() {
 
 class Julia {
   String frag_path = "safe.frag";
-  PShader frag = loadShader(frag_path);
+  PShader frag = loadShader("safe.frag");
   String tex_path;
   PImage tex;
-  HashMap<String, float[]> params;
 
   Julia (String frag_path, String tex_path) {
-    this.loadFrag(frag_path);
+    this.loadShader(frag_path);
     this.loadTexture(tex_path);
-    params = new HashMap<String, float[]>();
   }
 
   void loadTexture(File f) { this.loadTexture(f.getAbsolutePath()); }
@@ -37,7 +35,7 @@ class Julia {
     this.tex = loadImage(tex_path);
   }
 
-  void loadFrag(String frag_path) {
+  void loadShader(String frag_path) {
     try {
       PShader new_frag = loadShader(frag_path);
       new_frag.set("zoom", zoom);
@@ -52,26 +50,18 @@ class Julia {
       println("== === === === === === ==");
     }
   }
-  void reloadFrag() { this.loadFrag(this.frag_path); }
+  void reloadShader() { this.loadShader(this.frag_path); }
 
-  void set(String k, float x) {
-    this.frag.set(k, x);
-    this.params.put(k, new float[]{x});
-  }
-  void set(String k, float x, float y) {
-    this.frag.set(k, x, y);
-    this.params.put(k, new float[]{x, y});
-  }
-  void set(String k, float x, float y, float z) {
-    this.frag.set(k, x, y, z);
-    this.params.put(k, new float[]{x, y, z});
-  }
+  void set(String key, float x) { this.frag.set(key, x); }
+  void set(String key, float x, float y) { this.frag.set(key, x, y); }
+  void set(String key, float x, float y, float z) { this.frag.set(key, x, y, z); }
 
-  /*void render(PGraphics buf) {
+  void render(PGraphics buf) {
     float W = buf.width, H = buf.height;
     float aspect = W / H;
     buf.beginDraw();
       buf.shader(frag);
+      buf.scale(buf.height);
       buf.noStroke();
       buf.textureMode(NORMAL);
       buf.beginShape();
@@ -82,85 +72,44 @@ class Julia {
         buf.vertex(W, 0,  aspect, -1);
       buf.endShape(CLOSE);
     buf.endDraw();
-  }*/
-
-  void render(PGraphics buf, float x0, float y0, float x1, float y1) {
-    float W = buf.width, H = buf.height;
-    buf.beginDraw();
-      buf.shader(frag);
-      buf.noStroke();
-      buf.textureMode(NORMAL);
-      buf.beginShape();
-        buf.texture(tex);
-        buf.vertex(x0, y0, (2 * x0 - W) / H, (2 * y0 - H) / H);
-        buf.vertex(x0, y1, (2 * x0 - W) / H, (2 * y1 - H) / H);
-        buf.vertex(x1, y1, (2 * x1 - W) / H, (2 * y1 - H) / H);
-        buf.vertex(x1, y0, (2 * x1 - W) / H, (2 * y0 - H) / H);
-      buf.endShape(CLOSE);
-    buf.endDraw();
-  }
-  void render(PGraphics buf) {
-    // renders whole buffer
-    this.render(buf, 0, 0, buf.width, buf.height);
-  }
-
-  void render(PGraphics buf, int xn, int yn, int i) {
-    // renders the i-th block of the buffer subdivided in xn columns and yn rows.
-    int xi = i % xn, yi = i / xn;
-    float xs = (float) buf.width / (float) xn;
-    float ys = (float) buf.height / (float) yn;
-    this.render(buf, xs * xi, ys * yi, xs * (xi + 1.0), ys * (yi + 1.0));
   }
 
 }
 
 int reload_frame = 1, pmode = 1;
-boolean paused = false, dirty = true;
-int dirty_counter = 0;
-float Cr = -.7709787, Ci = -.08545, OCr = 0, OCi = 0;
+boolean paused = false;
+float Cr = -.71, Ci = .22, OCr = 0, OCi = 0;
 float Px = 0.0, Py = 0.0;
 float Mx = 0.0, My = 0.0;
-float zoom = 2.0, tzoom = 1.0, czoom = 1.0, tangle = 0.0;
-float min_iter = 0;
-
+float zoom = 2.0, tzoom = 1.0, czoom = 1.0;
 void draw() {
-  float W = width, H = height;
   double now = millis() / 1000.0;
   if (focused && !paused) {
-    if (reload_frame == 0) { tint(1.0); }
-    if (reload_frame == 1) { julia.reloadFrag(); dirty = true; }
-    if (reload_frame >= 1) { tint(0.5); reload_frame--; }
+    if (reload_frame == 0) tint(1.0);
+    if (reload_frame == 1) julia.reloadShader();
+    if (reload_frame >= 1) {
+      tint(0.5);
+      reload_frame--;
+    }
 
     if (pmode == 1) {
-      Cr = lerp(-2.2, 1.2, (1.0 * mouseX) / W);
-      Ci = lerp(-1.5, 1.5, (1.0 * mouseY) / H);
+      Cr = lerp(-2.0, 1.0, (1.0 * mouseX) / width);
+      Ci = lerp(-1.5, 1.5, (1.0 * mouseY) / height);
     }
     if (pmode == 2) {
-      Px = 2 * (2.0 * mouseX - W) / H;
-      Py = 2 * (2.0 * mouseY - H) / H;
+      Px = 2.0 * lerp(-aspect, aspect, (1.0 * mouseX) / width);
+      Py = 2.0 * lerp(-1.0, 1.0, (1.0 * mouseY) / height);
     }
 
     julia.set("C", OCr + czoom * Cr, OCi + czoom * Ci);
     julia.set("P", Px, Py);
-    julia.set("min_iter", min_iter);
     julia.set("M", Mx, My);
     julia.set("zoom", zoom);
-    julia.set("tex_angle", tangle);
-    julia.set("tex_zoom", tzoom);
-    julia.set("count", frameCount);
-    julia.set("alpha", 1.0);
-    julia.set("jitter_amount", 1.0 / buf.height);
+    julia.set("tzoom", tzoom);
+    julia.set("time", millis() * 0.001);
 
-    boolean dirty_now = dirty || (pmouseX != mouseX) || (pmouseY != mouseY);
-    dirty = false;
-    if (!dirty_now) {
-      dirty_counter++;
-      julia.set("alpha", 1.0 / (dirty_counter + 1));
-    } else {
-      dirty_counter = 0;
-    }
     julia.render(buf);
-    image(buf, 0, 0, W, H);
+    image(buf, 0, 0, width, height);
   }
 }
 
@@ -171,7 +120,6 @@ String timestamp() {
 void mouseWheel(MouseEvent event) {
   float e = event.getCount();
   adjustZoom(e);
-  dirty = true;
 }
 
 void adjustZoom(float e) {
@@ -198,8 +146,7 @@ void adjustCZoom(float e) {
 
 void reloadTexture(File f) { julia.loadTexture(f.getAbsolutePath()); }
 
-void keyPressed() {
-  dirty = true;
+void keyReleased() {
   if (keyCode == 'R' /* 82 */) {
     reload_frame = 2;
   } else if (keyCode == 'L' /* 76 */) {
@@ -218,18 +165,10 @@ void keyPressed() {
     tzoom *= 1.05;
   } else if (keyCode == ']' /* 93 */) {
     tzoom /= 1.05;
-  } else if (keyCode == ',' /* 91 */) {
-    tangle -= .1;
-  } else if (keyCode == '.' /* 93 */) {
-    tangle += .1;
   } else if (keyCode == '-' /* 45 */) {
     adjustZoom(0.3);
   } else if (keyCode == '=' /* 61 */) {
     adjustZoom(-0.3);
-  } else if (keyCode == '7') {
-    min_iter--;
-  } else if (keyCode == '8') {
-    min_iter++;
   } else if (keyCode == '9') {
     adjustCZoom(1.0);
   } else if (keyCode == '0') {
@@ -262,28 +201,35 @@ void keyPressed() {
     par.setFloat("Mx", Mx);
     par.setFloat("My", My);
     par.setFloat("zoom", zoom);
-    par.setFloat("tex_zoom", tzoom);
-    par.setFloat("tex_angle", tangle);
-    par.setFloat("min_iter", min_iter);
+    par.setFloat("tzoom", tzoom);
     saveJSONObject(par, json_filename);
 
     println(timestamp(), " === RENDERING *" + mul + " @ " + pg.width + "x" + pg.height);
-    for (int i = 0; i < mul * mul; i++) {
-      print("block", i, "/", mul * mul, "   ");
-      print("pass ");
-      for(int pass = 0; pass < 16; pass++) {
-        print(pass + ", ");
-        julia.set("jitter_amount", 2.5 / pg.height);
-        julia.set("count", pass);
-        julia.set("alpha", 1.0 / (pass + 1));
-        julia.render(pg, mul, mul, i);
-      }
-      pg.loadPixels();
-      println("L");
-    }
-    //println(timestamp(), " === Loading pixels.. ");
+    julia.render(pg);
+    println(timestamp(), " === Loading pixels.. ");
+    pg.loadPixels();
     println(timestamp(), " === writing", image_filename, "...");
     pg.save(image_filename);
     println(timestamp(), " === done. ");
   }
 }
+    // println("preRENDERING x" + mul);
+    // pg.beginDraw();
+    // pg.shader(frag);
+    // pg.scale(pg.height);
+    // pg.noStroke();
+    // pg.textureMode(NORMAL);
+    // pg.beginShape();
+    //   pg.texture(tex);
+    //   pg.vertex(0, 0, -aspect, -1);
+    //   pg.vertex(0, 1, -aspect,  1);
+    //   pg.vertex(aspect, 1,  aspect,  1);
+    //   pg.vertex(aspect, 0,  aspect, -1);
+    // pg.endShape(CLOSE);
+    // print("endshape. saving tmp ..");
+    // pg.save("/tmp/tmp.png");
+    // print("done.");
+    // pg.endDraw();
+    // print("endDraw. saving tmp2 ..");
+    // pg.save("/tmp/tmp2.png");
+    // println("done.");
