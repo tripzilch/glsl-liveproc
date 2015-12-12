@@ -6,8 +6,8 @@ void setup() {
   size(768, 512, P2D);
   colorMode(RGB, 1.0);
 
-  textureMode(NORMAL);  // unsure if needed
-  noStroke();           // unsure if needed
+/*  textureMode(NORMAL);  // unsure if needed
+  noStroke();           // unsure if needed*/
 
   buf_hi = createGraphics(width, height, P2D);
   buf_lo = createGraphics(width / 2, height / 2, P2D);
@@ -19,98 +19,103 @@ void setup() {
 }
 
 class Julia {
-  String frag_path = "safe.frag";
-  PShader frag = loadShader(frag_path);
-  String tex_path;
-  PImage tex;
-  HashMap<String, float[]> params;
 
-  Julia (String frag_path, String tex_path) {
-    this.loadFrag(frag_path);
-    this.loadTexture(tex_path);
-    params = new HashMap<String, float[]>();
-  }
+    String frag_path = "safe.frag";
+    PShader frag = loadShader(frag_path);
+    String tex_path;
+    PImage tex;
+    HashMap<String, float[]> params;
 
-  void loadTexture(File f) { this.loadTexture(f.getAbsolutePath()); }
-  void loadTexture(String tex_path) {
-    this.tex_path = tex_path;
-    this.tex = loadImage(tex_path);
-  }
-
-  void loadFrag(String frag_path) {
-    try {
-      PShader new_frag = loadShader(frag_path);
-      new_frag.set("zoom", zoom);
-      if (new_frag != null) {
-        this.frag = new_frag;
-        this.frag_path = frag_path;
-        println(timestamp(), " === SHADER OK == ", frag_path);
-      }
-    } catch (java.lang.RuntimeException e) {
-      println(timestamp(), " === SHADER ERROR == ", frag_path);
-      println(e.getMessage());
-      println("== === === === === === ==");
+    Julia (String frag_path, String tex_path) {
+      this.loadFrag(frag_path);
+      this.loadTexture(tex_path);
+      params = new HashMap<String, float[]>();
     }
-  }
-  void reloadFrag() { this.loadFrag(this.frag_path); }
 
-  void set(String k, float x) {
-    this.frag.set(k, x);
-    this.params.put(k, new float[]{x});
-  }
-  void set(String k, float x, float y) {
-    this.frag.set(k, x, y);
-    this.params.put(k, new float[]{x, y});
-  }
-  void set(String k, float x, float y, float z) {
-    this.frag.set(k, x, y, z);
-    this.params.put(k, new float[]{x, y, z});
-  }
+    void loadTexture(File f) { this.loadTexture(f.getAbsolutePath()); }
+    void loadTexture(String tex_path) {
+      this.tex_path = tex_path;
+      this.tex = loadImage(tex_path);
+    }
 
-  /*void render(PGraphics buf) {
-    float W = buf.width, H = buf.height;
-    float aspect = W / H;
-    buf.beginDraw();
-      buf.shader(frag);
-      buf.noStroke();
-      buf.textureMode(NORMAL);
-      buf.beginShape();
-        buf.texture(tex);
-        buf.vertex(0, 0, -aspect, -1);
-        buf.vertex(0, H, -aspect,  1);
-        buf.vertex(W, H,  aspect,  1);
-        buf.vertex(W, 0,  aspect, -1);
-      buf.endShape(CLOSE);
-    buf.endDraw();
-  }*/
+    void loadFrag(String frag_path) {
+      try {
+        PShader new_frag = loadShader(frag_path);
+        new_frag.set("zoom", zoom);
+        if (new_frag != null) {
+          this.frag = new_frag;
+          this.frag_path = frag_path;
+          println(timestamp(), " === SHADER OK == ", frag_path);
+        }
+      } catch (java.lang.RuntimeException e) {
+        println(timestamp(), " === SHADER ERROR == ", frag_path);
+        println(e.getMessage());
+        println("== === === === === === ==");
+      }
+    }
+    void reloadFrag() { this.loadFrag(this.frag_path); }
 
-  void render(PGraphics buf, float x0, float y0, float x1, float y1) {
-    float W = buf.width, H = buf.height;
-    buf.beginDraw();
-      buf.shader(frag);
-      buf.noStroke();
-      buf.textureMode(NORMAL);
-      buf.beginShape();
-        buf.texture(tex);
-        buf.vertex(x0, y0, (2 * x0 - W) / H, (2 * y0 - H) / H);
-        buf.vertex(x0, y1, (2 * x0 - W) / H, (2 * y1 - H) / H);
-        buf.vertex(x1, y1, (2 * x1 - W) / H, (2 * y1 - H) / H);
-        buf.vertex(x1, y0, (2 * x1 - W) / H, (2 * y0 - H) / H);
-      buf.endShape(CLOSE);
-    buf.endDraw();
-  }
-  void render(PGraphics buf) {
-    // renders whole buffer
-    this.render(buf, 0, 0, buf.width, buf.height);
-  }
+    private void setParams(String k, float... x) {
+      this.params.put(k, x);
+    }
 
-  void render(PGraphics buf, int xn, int yn, int i) {
-    // renders the i-th block of the buffer subdivided in xn columns and yn rows.
-    int xi = i % xn, yi = i / xn;
-    float xs = (float) buf.width / (float) xn;
-    float ys = (float) buf.height / (float) yn;
-    this.render(buf, xs * xi, ys * yi, xs * (xi + 1.0), ys * (yi + 1.0));
-  }
+    void set(String k, float x) {
+      this.frag.set(k, x);
+      this.setParams(k, x);
+    }
+    void set(String k, float x, float y) {
+      this.frag.set(k, x, y);
+      this.setParams(k, x, y);
+    }
+    void set(String k, float x, float y, float z) {
+      this.frag.set(k, x, y, z);
+      this.setParams(k, x, y, z);
+    }
+
+    /*void render(PGraphics buf) {
+      float W = buf.width, H = buf.height;
+      float aspect = W / H;
+      buf.beginDraw();
+        buf.shader(frag);
+        buf.noStroke();
+        buf.textureMode(NORMAL);
+        buf.beginShape();
+          buf.texture(tex);
+          buf.vertex(0, 0, -aspect, -1);
+          buf.vertex(0, H, -aspect,  1);
+          buf.vertex(W, H,  aspect,  1);
+          buf.vertex(W, 0,  aspect, -1);
+        buf.endShape(CLOSE);
+      buf.endDraw();
+    }*/
+
+    void render(PGraphics buf, float x0, float y0, float x1, float y1) {
+      float W = buf.width, H = buf.height;
+      buf.beginDraw();
+        buf.shader(frag);
+        buf.noStroke();
+        buf.textureMode(NORMAL);
+        buf.beginShape();
+          buf.texture(tex);
+          buf.vertex(x0, y0, (2 * x0 - W) / H, (2 * y0 - H) / H);
+          buf.vertex(x0, y1, (2 * x0 - W) / H, (2 * y1 - H) / H);
+          buf.vertex(x1, y1, (2 * x1 - W) / H, (2 * y1 - H) / H);
+          buf.vertex(x1, y0, (2 * x1 - W) / H, (2 * y0 - H) / H);
+        buf.endShape(CLOSE);
+      buf.endDraw();
+    }
+    void render(PGraphics buf) {
+      // renders whole buffer
+      this.render(buf, 0, 0, buf.width, buf.height);
+    }
+
+    void render(PGraphics buf, int xn, int yn, int i) {
+      // renders the i-th block of the buffer subdivided in xn columns and yn rows.
+      int xi = i % xn, yi = i / xn;
+      float xs = (float) buf.width / (float) xn;
+      float ys = (float) buf.height / (float) yn;
+      this.render(buf, xs * xi, ys * yi, xs * (xi + 1.0), ys * (yi + 1.0));
+    }
 
 }
 
@@ -174,12 +179,34 @@ void mouseWheel(MouseEvent event) {
   dirty = true;
 }
 
+float pix2coord_x(float x) { return zoom * (2.0 * x - width) / height + Mx; }
+float pix2coord_y(float y) { return zoom * (2.0 * y - height) / height + My; }
+
+float pan_x=0, pan_y=0, Mx0=0, My0=0;
+void mousePressed(MouseEvent event) {
+  float W = width, H = height;
+  pan_x = pix2coord_x(mouseX);
+  pan_y = pix2coord_y(mouseY);
+  Mx0 = Mx;
+  My0 = My;
+  println("click");
+}
+void mouseDragged(MouseEvent event) {
+  float px = pix2coord_x(mouseX), py = pix2coord_y(mouseY); // px = q + mx
+  Mx = Mx + pan_x - px;  // mx = mx + panx - q - mx = panx - q
+  My = My + pan_y - py;
+  pan_x = pix2coord_x(mouseX); // pan_x = px;
+  pan_y = pix2coord_y(mouseY); // pan_y = py;
+}
+
 void adjustZoom(float e) {
   float factor = pow(1.09, e);
   // calc mouse location in complex plane
   float W = width, H = height;
-  float x = zoom * (2 * mouseX - W) / H + Mx;
-  float y = zoom * (2 * mouseY - H) / H + My;
+  float x = pix2coord_x(mouseX);
+  float y = pix2coord_y(mouseY);
+  //float x = zoom * (2 * mouseX - W) / H + Mx;
+  //float y = zoom * (2 * mouseY - H) / H + My;
   // calc new centre point P
   float drag = 1.333; // 1.0 = zoom around mouse loc, >1 = drag to centre
   Mx = (Mx - x) * pow(factor, drag) + x;

@@ -62,16 +62,13 @@ vec3 tex_circular(vec3 T, float i) {
 }
 
 void main (void) {
-    vec3 color;
-    float wsum = 0.0, w;
-
     vec2 Z = M + zoom * (vertTexCoord.st + jitter_amount * randfc2(count));
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
 
     // orbit trap vars
     float i = 0.0;
-    color = (i >= min_iter) ? tex_circular(trap(Z, i), i) : vec3(1.0);
+    vec3 color = (i >= min_iter) ? tex_circular(trap(Z, i), i) : vec3(1.0);
     for (i = 1.; i < MAXITER; i++) {
         if (Zmag2 < BAILOUT2) {
             // iterate Z
