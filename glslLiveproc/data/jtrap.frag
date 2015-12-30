@@ -30,17 +30,21 @@ const vec4 zeros = vec4(0.0);
 const float tx = 10.5 / 768.;
 
 float rand(vec2 co) {
-    float a = 12.9898;
-    float b = 78.233;
-    float c = 43758.5453;
-    float dt= dot(co.xy ,vec2(a,b));
-    float sn= mod(dt,3.14);
+    const float a = 12.9898;
+    const float b = 78.233;
+    const float c = 43758.5453;
+    float dt= dot(co.xy, vec2(a, b));
+    float sn= mod(dt, 3.14);
     return fract(sin(sn) * c) - 0.5;
 }
 float randfc(float k) { return rand(gl_FragCoord.xy + k * 48.3); }
 
-vec2 randfc2(float k) { return vec2(rand(gl_FragCoord.xy + k * 29.9 - 23.5),
+vec2 randfc2(float k) { return vec2(rand(gl_FragCoord.xy + k * 29.9),
                                     rand(gl_FragCoord.xy + k * 127.6)); }
+
+vec3 randfc3(float k) { return vec3(rand(gl_FragCoord.xy + k * 89.2),
+                                    rand(gl_FragCoord.xy + k * 55.1),
+                                    rand(gl_FragCoord.xy + k * 34.0)); }
 
 vec3 tex(vec2 p, float i) {
     //float a = i * (TAU / PHI / PHI);
@@ -65,6 +69,8 @@ void main (void) {
     vec2 Z = M + zoom * (vertTexCoord.st + jitter_amount * randfc2(count));
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
+    float dZmag2 = Z2.x + Z2.y;
+    vec2 dZ = vec2(1.0, 0);
 
     // orbit trap vars
     float i = 0.0;
@@ -73,6 +79,16 @@ void main (void) {
         if (Zmag2 < BAILOUT2) {
             // iterate Z
             vec2 Zprev = Z;
+            // dZ = d = 2 * d * Z = 2 * (d.x + i*d.y) * (Z.x + i*Z.y) =
+            //    = 2 * (drZr + i*drZi + i*diZr - diZi) =
+            //    = 2 * (d.x * Z.x - d.y * Z.y) + 2i * (d.x * Z.y + d.y * Z.x)
+            //    = 2 * vec2
+
+            // A*B = A.x * B.x - A.y * B.y , A.x * B.y + A.y * B.x
+            //     = A.x * B + A.y * vec2(-1, 1) * B.yx
+            dZmag2 *= 4. * Zmag2;
+            dZ *= 2.0 * Z;
+
             Z.y *= 2.0 * Z.x;
             Z.x = Z2.x - Z2.y;
             Z += C;
@@ -83,11 +99,18 @@ void main (void) {
                 vec2 X = (Z - vec2(P)) * .5 * tex_zoom;
                 //vec3 c = tex_circular(trap(Z, i), i);
                 vec3 c = mix(tex(X, i), vec3(1.0), smoothstep(.4963, .5, length(X)));
+                float dZmag = length(dZ);
+                //if (dZmag2 > pow(texOffset.x, 2.)) c.rb = vec2(1);
+                c.r = dZmag * tex_zoom;
+                c.b = dZmag * .125 * tex_zoom;
                 //c = tex(X, i);
                 color *= c; //pow(c, vec3(0.75));
             }
         }
     }
+    // inside black
     color *= step(BAILOUT2, Zmag2);
+    // dither, gamma, output
+    color += randfc3(count) * (2.0 / 256.0);
     gl_FragColor = vec4(pow(color, gamma), alpha);
 }

@@ -13,7 +13,7 @@ void setup() {
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_lo;
 
-  julia = new Julia("jtrap.frag", "tex/splats3.png");
+  julia = new Julia("test.frag", "tex/splats3_blur.jpg");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
 }
@@ -24,18 +24,19 @@ class Julia {
     PShader frag = loadShader(frag_path);
     String tex_path;
     PImage tex;
-    HashMap<String, float[]> params;
+    JSONObject par;
 
     Julia (String frag_path, String tex_path) {
+      par = new JSONObject();
       this.loadFrag(frag_path);
       this.loadTexture(tex_path);
-      params = new HashMap<String, float[]>();
     }
 
     void loadTexture(File f) { this.loadTexture(f.getAbsolutePath()); }
     void loadTexture(String tex_path) {
-      this.tex_path = tex_path;
       this.tex = loadImage(tex_path);
+      this.tex_path = tex_path;
+      this.par.setString("tex_path", tex_path);
     }
 
     void loadFrag(String frag_path) {
@@ -45,6 +46,7 @@ class Julia {
         if (new_frag != null) {
           this.frag = new_frag;
           this.frag_path = frag_path;
+          this.par.setString("frag_path", frag_path);
           println(timestamp(), " === SHADER OK == ", frag_path);
         }
       } catch (java.lang.RuntimeException e) {
@@ -55,21 +57,22 @@ class Julia {
     }
     void reloadFrag() { this.loadFrag(this.frag_path); }
 
-    private void setParams(String k, float... x) {
-      this.params.put(k, x);
+    private JSONArray JSONFromFloats(float... x) {
+      FloatList lx = new FloatList(x);
+      return new JSONArray(lx);
     }
 
     void set(String k, float x) {
       this.frag.set(k, x);
-      this.setParams(k, x);
+      this.par.setFloat(k, x);
     }
     void set(String k, float x, float y) {
       this.frag.set(k, x, y);
-      this.setParams(k, x, y);
+      this.par.setJSONArray(k, JSONFromFloats(x, y));
     }
     void set(String k, float x, float y, float z) {
       this.frag.set(k, x, y, z);
-      this.setParams(k, x, y, z);
+      this.par.setJSONArray(k, JSONFromFloats(x, y, z));
     }
 
     /*void render(PGraphics buf) {
@@ -189,7 +192,6 @@ void mousePressed(MouseEvent event) {
   pan_y = pix2coord_y(mouseY);
   Mx0 = Mx;
   My0 = My;
-  println("click");
 }
 void mouseDragged(MouseEvent event) {
   float px = pix2coord_x(mouseX), py = pix2coord_y(mouseY); // px = q + mx
@@ -213,7 +215,7 @@ void adjustZoom(float e) {
   My = (My - y) * pow(factor, drag) + y;
   // adjust zooom
   zoom *= factor;
-  println(nfs(Mx,1,4),nfs(My,1,4),nfs(Cr,1,4),nfs(Ci,1,4),nfs(zoom,4,5));
+  //println(nfs(Mx,1,4),nfs(My,1,4),nfs(Cr,1,4),nfs(Ci,1,4),nfs(zoom,4,5));
 }
 
 void adjustCZoom(float e) {
@@ -263,6 +265,7 @@ void keyPressed() {
     adjustCZoom(-1.0);
   } else if (keyCode == 'P' /* 80 */) {
     paused = !paused;
+    println(julia.par.format(4));
   } else if (keyCode == 'F' /* 70 */) {
     pmode = 0;
   } else if (keyCode == 'C' /* 67 */) {
@@ -274,25 +277,13 @@ void keyPressed() {
   } else if (keyCode == 'S' /* 83 */) {
     int mul = 5;
     PGraphics pg = createGraphics(mul * width, mul * height, P2D);
-    JSONObject par = new JSONObject();
     String filename = "qtrap_" + timestamp();
     String json_filename = "save/" + filename + ".json";
     String image_filename = "/tmp/" + filename + ".png";
 
     println(timestamp(), " === writing", json_filename);
-    par.setString("tex_path", julia.tex_path);
-    par.setString("frag_path", julia.frag_path);
-    par.setFloat("Cr", OCr + czoom * Cr);
-    par.setFloat("Ci", OCi + czoom * Ci);
-    par.setFloat("Px", Px);
-    par.setFloat("Py", Py);
-    par.setFloat("Mx", Mx);
-    par.setFloat("My", My);
-    par.setFloat("zoom", zoom);
-    par.setFloat("tex_zoom", tzoom);
-    par.setFloat("tex_angle", tangle);
-    par.setFloat("min_iter", min_iter);
-    saveJSONObject(par, json_filename);
+    julia.par.setString("timestamp", timestamp());
+    saveJSONObject(julia.par, json_filename);
 
     println(timestamp(), " === RENDERING *" + mul + " @ " + pg.width + "x" + pg.height);
     for (int i = 0; i < mul * mul; i++) {
