@@ -1,0 +1,24 @@
+{
+  "C": [
+    -0.45572925,
+    -0.7734375
+  ],
+  "count": 5082,
+  "frag_path": "jtrap-dz-res.frag",
+  "min_iter": 1,
+  "zoom": 2,
+  "M": [
+    0,
+    0
+  ],
+  "tex_path": "tex/grid256b.png",
+  "P": [
+    0,
+    0
+  ],
+  "tex_angle": 0,
+  "alpha": 0.0714285746216774,
+  "tex_zoom": 1,
+  "jitter_amount": 0.00390625,
+  "timestamp": "2015-12-19_15.37.34"
+}
