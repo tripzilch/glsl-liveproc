@@ -1,0 +1,28 @@
+{
+  "C": [
+    -0.99728596,
+    0.33544922
+  ],
+  "count": 107681,
+  "pix_size": [
+    0.001953125,
+    0.001953125
+  ],
+  "frag_path": "jtrap-dz-res.frag",
+  "min_iter": 0,
+  "zoom": 0.30036336183547974,
+  "M": [
+    0.6295335,
+    -0.14721787
+  ],
+  "tex_path": "/home/ritz/git/tripzilch/glsl-liveproc/glslLiveproc/data/tex/splats37blur.png",
+  "P": [
+    -0.71875,
+    0.4765625
+  ],
+  "tex_angle": -2.000000476837158,
+  "alpha": 0.016949152573943138,
+  "tex_zoom": 1,
+  "jitter_amount": 0.001953125,
+  "timestamp": "2016-01-05_23.32.39"
+}

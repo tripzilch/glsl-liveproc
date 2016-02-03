@@ -14,6 +14,7 @@ uniform float zoom;
 uniform float tex_zoom;
 uniform float tex_angle;
 uniform float alpha;
+uniform float bw_threshold;
 uniform float jitter_amount;
 
 varying vec4 vertColor;
@@ -21,7 +22,7 @@ varying vec4 vertTexCoord;
 
 const vec3 igamma = vec3(2.2);
 const vec3 gamma = 1.0 / igamma;
-const float MAXITER = 350.;
+const float MAXITER = 75.;
 const float BAILOUT2 = 256.0;
 const float TAU = 6.283185307179586;
 const float PHI = 1.618033988749895;
@@ -61,7 +62,7 @@ vec3 tex(vec2 p) {
     mat2 rot = mat2( cos(tex_angle), -sin(tex_angle),
                      sin(tex_angle),  cos(tex_angle));
     vec2 r = .5 + rot * p;
-    return pow(texture2D(texture, r).xyz, igamma);
+    return texture2D(texture, r).xyz;
 }
 
 vec3 tex(vec2 p, vec2 dpdx) {
@@ -69,12 +70,12 @@ vec3 tex(vec2 p, vec2 dpdx) {
                      sin(tex_angle),  cos(tex_angle));
     p = .5 + rot * p;
     dpdx = rot * dpdx;
-    return pow(textureGrad(texture, p, dpdx, dpdx.yx * negx).xyz, igamma);
+    return textureGrad(texture, p, dpdx, dpdx.yx * negx).xyz;
 }
 
-vec3 texplex(vec2 Z, vec2 dZ) {
-    vec2 X = (Z - vec2(P)) * .5 * tex_zoom;
-    vec2 dX = dZ * 1.0 * tex_zoom * zoom * pix_size;
+vec3 texplex(vec2 Z, vec2 dZ, float tmag) {
+    vec2 X = (Z - vec2(P)) * .5 * tex_zoom * tmag;
+    vec2 dX = dZ * 1.0 * tex_zoom * zoom * pix_size * tmag;
     //float dXmag = length(dX);
     //float grain = 1.0 - smoothstep(0.0, 1.0, dXmag / pix_size.y);
     //X += 1.0 * grain * pix_size * (randfc2(dot(X,vec2(7777.0,5555.0))));
@@ -86,29 +87,35 @@ vec3 texplex(vec2 Z, vec2 dZ) {
 
 void main (void) {
     vec2 Z = M + zoom * (pixf + 2.0 * jitter_amount * randfc2(count));
+    //Z = Z.yx;
 
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
     vec2 dZ = vec2(1.0, 0);
 
     float i = 0.0;
-    vec3 color = (i >= min_iter) ? texplex(Z, dZ) : vec3(1.0);
+    float tmag = 1.0;
+    vec3 color = (i >= min_iter) ? texplex(Z, dZ, tmag) : vec3(1.0);
     for (i = 1.; i < MAXITER; i++) {
         if (Zmag2 < BAILOUT2) {
+            tmag *= 0.9;
             dZ = 2.0 * vec2(Z.x * dZ.x - Z.y * dZ.y, Z.x * dZ.y + Z.y * dZ.x);
             Z.y *= 2.0 * Z.x;
             Z.x = Z2.x - Z2.y;
             Z += C;
             Z2 = Z * Z;
             Zmag2 = Z2.x + Z2.y;
-            vec3 cc = texplex(Z, dZ);
-            if (i >= min_iter) color = color * cc;
+            vec3 cc = texplex(Z, dZ, tmag);
+            if (i >= min_iter) {
+                color = color * cc;
+                // color = min(color, cc);
+                // color = mix(color * cc, min(color, cc), 0.25);
+            }
         }
     }
+    float grey = dot(color, vec3(.5, .3, .2));
+    grey = step(bw_threshold, grey);
     // inside black
-    color *= step(BAILOUT2, Zmag2);
-    // dither, gamma, output
-    //color.g = rand(gl_FragCoord.xy)+0.5;
-    //color *= vec3(1.0,1.0,0.5) + randfc3(count);
-    gl_FragColor = vec4(pow(color, gamma * 1.1), alpha);
+    grey *= step(BAILOUT2, Zmag2);
+    gl_FragColor = vec4(vec3(grey), alpha);
 }

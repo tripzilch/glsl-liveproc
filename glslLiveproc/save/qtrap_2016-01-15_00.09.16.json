@@ -1,0 +1,28 @@
+{
+  "C": [
+    -1.0046875,
+    -0.40429688
+  ],
+  "count": 7578,
+  "pix_size": [
+    0.001953125,
+    0.001953125
+  ],
+  "frag_path": "jtrap-dz-thres.frag",
+  "min_iter": -1,
+  "zoom": 0.38897931575775146,
+  "M": [
+    0.14935938,
+    0.5195972
+  ],
+  "tex_path": "/home/ritz/git/tripzilch/glsl-liveproc/glslLiveproc/data/tex/woink.png",
+  "P": [
+    0.3359375,
+    0.0625
+  ],
+  "tex_angle": -1.600000262260437,
+  "alpha": 0.019999999552965164,
+  "tex_zoom": 1,
+  "jitter_amount": 0.001953125,
+  "timestamp": "2016-01-15_00.09.16"
+}

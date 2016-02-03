@@ -3,7 +3,7 @@ Julia julia;
 PGraphics buf_hi, buf_lo, buf;
 
 void setup() {
-  size(768, 512, P2D);
+  size(960, 480, P2D);
   colorMode(RGB, 1.0);
 
 /*  textureMode(NORMAL);  // unsure if needed
@@ -13,7 +13,7 @@ void setup() {
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_lo;
 
-  julia = new Julia("test.frag", "tex/splats3_blur.jpg");
+  julia = new Julia("julia-woink2.frag", "tex/woink2.png");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
 }
@@ -75,25 +75,9 @@ class Julia {
       this.par.setJSONArray(k, JSONFromFloats(x, y, z));
     }
 
-    /*void render(PGraphics buf) {
-      float W = buf.width, H = buf.height;
-      float aspect = W / H;
-      buf.beginDraw();
-        buf.shader(frag);
-        buf.noStroke();
-        buf.textureMode(NORMAL);
-        buf.beginShape();
-          buf.texture(tex);
-          buf.vertex(0, 0, -aspect, -1);
-          buf.vertex(0, H, -aspect,  1);
-          buf.vertex(W, H,  aspect,  1);
-          buf.vertex(W, 0,  aspect, -1);
-        buf.endShape(CLOSE);
-      buf.endDraw();
-    }*/
-
     void render(PGraphics buf, float x0, float y0, float x1, float y1) {
       float W = buf.width, H = buf.height;
+      julia.set("pix_size", 2 * (x1 - x0) / buf.width, 2 * (y1 - y0) / buf.height);
       buf.beginDraw();
         buf.shader(frag);
         buf.noStroke();
@@ -125,9 +109,10 @@ class Julia {
 int reload_frame = 1, pmode = 1;
 boolean paused = false, dirty = true;
 int dirty_counter = 0;
+float count = 0.0;
 float Cr = -.7709787, Ci = -.08545, OCr = 0, OCi = 0;
 float Px = 0.0, Py = 0.0;
-float Mx = 0.0, My = 0.0;
+float Mx = 0.0, My = 0.0, bw_threshold = 0.5;
 float zoom = 2.0, tzoom = 1.0, czoom = 1.0, tangle = 0.0;
 float min_iter = 0;
 
@@ -135,6 +120,7 @@ void draw() {
   float W = width, H = height;
   double now = millis() / 1000.0;
   if (focused && !paused) {
+    count += 1.0;
     if (reload_frame == 0) { tint(1.0); }
     if (reload_frame == 1) { julia.reloadFrag(); dirty = true; }
     if (reload_frame >= 1) { tint(0.5); reload_frame--; }
@@ -144,8 +130,8 @@ void draw() {
       Ci = lerp(-1.5, 1.5, (1.0 * mouseY) / H);
     }
     if (pmode == 2) {
-      Px = 2 * (2.0 * mouseX - W) / H;
-      Py = 2 * (2.0 * mouseY - H) / H;
+      Px = 3 * (2.0 * mouseX - W) / H;
+      Py = 3 * (2.0 * mouseY - H) / H;
     }
 
     julia.set("C", OCr + czoom * Cr, OCi + czoom * Ci);
@@ -155,7 +141,8 @@ void draw() {
     julia.set("zoom", zoom);
     julia.set("tex_angle", tangle);
     julia.set("tex_zoom", tzoom);
-    julia.set("count", frameCount);
+    julia.set("bw_threshold", bw_threshold);
+    julia.set("count", count);
     julia.set("alpha", 1.0);
     julia.set("jitter_amount", 1.0 / buf.height);
 
@@ -163,7 +150,7 @@ void draw() {
     dirty = false;
     if (!dirty_now) {
       dirty_counter++;
-      julia.set("alpha", 1.0 / (dirty_counter + 1));
+      julia.set("alpha", 4.0 / (dirty_counter + 4));
     } else {
       dirty_counter = 0;
     }
@@ -237,8 +224,7 @@ void keyPressed() {
   } else if (keyCode == 'Z' /* 90 */) {
     Mx = 0.0;
     My = 0.0;
-    zoom = 2.0;
-    tzoom = 1.0;
+    zoom = 1.0;
     Cr = OCr + czoom * Cr;
     Ci = OCi + czoom * Ci;
     OCr = OCi = 0.0;
@@ -247,10 +233,14 @@ void keyPressed() {
     tzoom *= 1.05;
   } else if (keyCode == ']' /* 93 */) {
     tzoom /= 1.05;
+  } else if (keyCode == ';' /* 91 */) {
+    bw_threshold = 0.9 * bw_threshold + 0.1;
+  } else if (keyCode == '\'' /* 93 */) {
+    bw_threshold = 0.9 * bw_threshold + 0.0;
   } else if (keyCode == ',' /* 91 */) {
-    tangle -= .1;
+    tangle -= .13;
   } else if (keyCode == '.' /* 93 */) {
-    tangle += .1;
+    tangle += .16;
   } else if (keyCode == '-' /* 45 */) {
     adjustZoom(0.3);
   } else if (keyCode == '=' /* 61 */) {
@@ -289,9 +279,15 @@ void keyPressed() {
     for (int i = 0; i < mul * mul; i++) {
       print("block", i, "/", mul * mul, "   ");
       print("pass ");
-      for(int pass = 0; pass < 16; pass++) {
+      // a/d = 4
+      // a/(d+7) = 1
+      //
+      // a = d+7
+      // 7/3 = d
+      julia.set("pix_size", 1.0 / pg.height, 1.0 / pg.height);
+      for(int pass = 0; pass < 12; pass++) {
         print(pass + ", ");
-        julia.set("jitter_amount", 2.5 / pg.height);
+        julia.set("jitter_amount", (16.0 / (5.0 + pass)) / pg.height);
         julia.set("count", pass);
         julia.set("alpha", 1.0 / (pass + 1));
         julia.render(pg, mul, mul, i);

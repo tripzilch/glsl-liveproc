@@ -1,0 +1,29 @@
+{
+  "C": [
+    -0.2485416,
+    0.9375
+  ],
+  "count": 8679,
+  "pix_size": [
+    2,
+    2
+  ],
+  "frag_path": "jtrap-dub.frag",
+  "min_iter": 5,
+  "zoom": 0.04494136571884155,
+  "M": [
+    -0.065291435,
+    -0.32817236
+  ],
+  "tex_path": "tex/Cutup - Charles Poiree - Rhetorica(1715).jpg",
+  "P": [
+    -0.8125,
+    1.2
+  ],
+  "tex_angle": 6.559998035430908,
+  "bw_threshold": 0.5,
+  "alpha": 0.125,
+  "tex_zoom": 0.09614230692386627,
+  "jitter_amount": 0.0020833334419876337,
+  "timestamp": "2016-01-27_00.24.26"
+}

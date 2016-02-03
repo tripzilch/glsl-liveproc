@@ -4,7 +4,7 @@ precision mediump float;
 
 #define PROCESSING_TEXTURE_SHADER
 uniform sampler2D texture;
-uniform vec2 pix_size; // vec2(1/width,1/height)
+uniform vec2 texOffset; // vec2(1/width,1/height)
 uniform vec2 C;
 uniform vec2 P;
 uniform float min_iter;
@@ -15,6 +15,7 @@ uniform float tex_zoom;
 uniform float tex_angle;
 uniform float alpha;
 uniform float jitter_amount;
+uniform vec2 pix_size;
 
 varying vec4 vertColor;
 varying vec4 vertTexCoord;
@@ -61,38 +62,30 @@ vec3 tex(vec2 p) {
     mat2 rot = mat2( cos(tex_angle), -sin(tex_angle),
                      sin(tex_angle),  cos(tex_angle));
     vec2 r = .5 + rot * p;
-    return pow(texture2D(texture, r).xyz, igamma);
+    return texture2D(texture, clamp(r, 0.01, .99)).xyz;
 }
 
-vec3 tex(vec2 p, vec2 dpdx) {
-    mat2 rot = mat2( cos(tex_angle), -sin(tex_angle),
-                     sin(tex_angle),  cos(tex_angle));
-    p = .5 + rot * p;
-    dpdx = rot * dpdx;
-    return pow(textureGrad(texture, p, dpdx, dpdx.yx * negx).xyz, igamma);
-}
-
-vec3 texplex(vec2 Z, vec2 dZ) {
-    vec2 X = (Z - vec2(P)) * .5 * tex_zoom;
-    vec2 dX = dZ * 1.0 * tex_zoom * zoom * pix_size;
-    //float dXmag = length(dX);
-    //float grain = 1.0 - smoothstep(0.0, 1.0, dXmag / pix_size.y);
-    //X += 1.0 * grain * pix_size * (randfc2(dot(X,vec2(7777.0,5555.0))));
-    //vec3 c = tex(X);
-    vec3 c = mix(tex(X), vec3(1.0), smoothstep(.4963, .5, length(X)));
-    //c.b = mix(c.b, 1.0, grain);
+const vec3 background = vec3(0.8588235, 0.8196078, 0.6901961);
+const vec3 black =vec3(0.3098039, 0.2784314, 0.2313725);
+vec3 texc(vec2 Z, vec2 dZ) {
+    vec2 X = (Z - P) * .5 * tex_zoom;
+    float res = length(dZ * pix_size * tex_zoom) * zoom * 2.0;
+    float L = length(X);
+    vec3 c = tex(X);
+    c = mix((c - black) / (background - black), c, 0.3);
+    //c.b = step(.99, res);
     return c;
 }
 
 void main (void) {
-    vec2 Z = M + zoom * (pixf + 2.0 * jitter_amount * randfc2(count));
-
+    vec2 Z = M + 2.0 * zoom * (pixf + 2.0 * jitter_amount * randfc2(count));
+    Z = -Z.yx;
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
     vec2 dZ = vec2(1.0, 0);
 
     float i = 0.0;
-    vec3 color = (i >= min_iter) ? texplex(Z, dZ) : vec3(1.0);
+    vec3 color = (i >= min_iter) ? texc(Z, dZ) : texc(P, dZ);
     for (i = 1.; i < MAXITER; i++) {
         if (Zmag2 < BAILOUT2) {
             dZ = 2.0 * vec2(Z.x * dZ.x - Z.y * dZ.y, Z.x * dZ.y + Z.y * dZ.x);
@@ -101,14 +94,13 @@ void main (void) {
             Z += C;
             Z2 = Z * Z;
             Zmag2 = Z2.x + Z2.y;
-            vec3 cc = texplex(Z, dZ);
-            if (i >= min_iter) color = color * cc;
+            if (i >= min_iter) {
+                vec3 c = texc(Z, dZ);
+                color = min(color, c);
+            }
         }
     }
     // inside black
     color *= step(BAILOUT2, Zmag2);
-    // dither, gamma, output
-    //color.g = rand(gl_FragCoord.xy)+0.5;
-    //color *= vec3(1.0,1.0,0.5) + randfc3(count);
-    gl_FragColor = vec4(pow(color, gamma * 1.1), alpha);
+    gl_FragColor = vec4(color, alpha);
 }
