@@ -13,7 +13,7 @@ void setup() {
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_lo;
 
-  julia = new Julia("julia-woink2.frag", "tex/woink2.png");
+  julia = new Julia("jtrap-incog.frag", "tex/incognito.png");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
 }
