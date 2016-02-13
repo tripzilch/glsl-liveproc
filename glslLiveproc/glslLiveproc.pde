@@ -13,7 +13,7 @@ void setup() {
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_lo;
 
-  julia = new Julia("jtrap-incog.frag", "tex/incognito.png");
+  julia = new Julia("jtrap-crackle.frag", "tex/dots1k.jpg");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
 }
@@ -269,7 +269,7 @@ void keyPressed() {
     PGraphics pg = createGraphics(mul * width, mul * height, P2D);
     String filename = "qtrap_" + timestamp();
     String json_filename = "save/" + filename + ".json";
-    String image_filename = "/tmp/" + filename + ".png";
+    String image_filename = "" + filename + ".png";
 
     println(timestamp(), " === writing", json_filename);
     julia.par.setString("timestamp", timestamp());
