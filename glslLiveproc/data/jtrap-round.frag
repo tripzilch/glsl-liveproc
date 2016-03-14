@@ -42,7 +42,7 @@ vec3 trap(vec2 Z, float i) {
 }
 
 vec3 traptex(vec3 T, float i) {
-    return tex(normalize(T.yz) * min(.48, T.x * pow(1.0 + i, 0.1)));
+    return tex(normalize(T.yz) * min(.48, T.x * pow(1.0 + i, 0.1))); // move pow outisde of min
     //mix(tex(normalize(T.yz) * T.x), vec3(0), smoothstep(0.9, 1.0, T.x));
 }
 

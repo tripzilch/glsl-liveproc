@@ -1,0 +1,29 @@
+{
+  "C": [
+    0.29333332,
+    -0.75
+  ],
+  "count": 12552,
+  "pix_size": [
+    2,
+    2
+  ],
+  "frag_path": "jtrap-crackle.frag",
+  "min_iter": 1,
+  "zoom": 0.5984928607940674,
+  "M": [
+    0.36480778,
+    0.6828195
+  ],
+  "tex_path": "tex/crackle1024.png",
+  "P": [
+    0,
+    0
+  ],
+  "tex_angle": 0,
+  "bw_threshold": 0.05209500715136528,
+  "alpha": 0.1111111119389534,
+  "tex_zoom": 1,
+  "jitter_amount": 0.0020833334419876337,
+  "timestamp": "2016-02-12_16.04.44"
+}

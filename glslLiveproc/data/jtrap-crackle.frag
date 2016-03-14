@@ -107,7 +107,7 @@ void main (void) {
         }
     }
     // inside black
-    color = vec3(smoothstep(0.495, 0.505, pow(color.g, 1.0)));
+    color = vec3(smoothstep(0.480, 0.485, pow(color.g, 1.0)));
     color *= step(BAILOUT2, Zmag2);
     // dither, gamma, output
     //color.g = rand(gl_FragCoord.xy)+0.5;

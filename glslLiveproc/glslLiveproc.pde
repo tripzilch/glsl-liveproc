@@ -13,7 +13,7 @@ void setup() {
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_lo;
 
-  julia = new Julia("jtrap-crackle.frag", "tex/dots1k.jpg");
+  julia = new Julia("jtrap-mars.frag", "tex/mars.png");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
 }
@@ -77,7 +77,7 @@ class Julia {
 
     void render(PGraphics buf, float x0, float y0, float x1, float y1) {
       float W = buf.width, H = buf.height;
-      julia.set("pix_size", 2 * (x1 - x0) / buf.width, 2 * (y1 - y0) / buf.height);
+      this.set("pix_size", 2 * (x1 - x0) / buf.width, 2 * (y1 - y0) / buf.height);
       buf.beginDraw();
         buf.shader(frag);
         buf.noStroke();
@@ -106,15 +106,23 @@ class Julia {
 
 }
 
-int reload_frame = 1, pmode = 1;
+int reload_frame = 1, pmode = 0;
 boolean paused = false, dirty = true;
 int dirty_counter = 0;
-float count = 0.0;
-float Cr = -.7709787, Ci = -.08545, OCr = 0, OCi = 0;
-float Px = 0.0, Py = 0.0;
-float Mx = 0.0, My = 0.0, bw_threshold = 0.5;
-float zoom = 2.0, tzoom = 1.0, czoom = 1.0, tangle = 0.0;
-float min_iter = 0;
+float count = 0.0,
+      Cr = 0.38276052,
+      Ci = -0.05781254,
+      min_iter = 0,
+      zoom = 0.8711997270584106,
+      Mx = 0.084953114,
+      My = 0.01834692,
+      Px = -.15,
+      Py = -.175,
+      tangle = -1.1399999856948853,
+      bw_threshold = 0.5,
+      tzoom =  3.3863511085510254,
+      czoom = 1.0,
+      OCr = 0, OCi = 0;
 
 void draw() {
   float W = width, H = height;
@@ -265,11 +273,11 @@ void keyPressed() {
   } else if (keyCode == 'H' /* 86 */) {
     buf = (buf == buf_lo) ? buf_hi : buf_lo;
   } else if (keyCode == 'S' /* 83 */) {
-    int mul = 5;
+    int mul = 6;
     PGraphics pg = createGraphics(mul * width, mul * height, P2D);
     String filename = "qtrap_" + timestamp();
     String json_filename = "save/" + filename + ".json";
-    String image_filename = "" + filename + ".png";
+    String image_filename = "/tmp/" + filename + ".png";
 
     println(timestamp(), " === writing", json_filename);
     julia.par.setString("timestamp", timestamp());
