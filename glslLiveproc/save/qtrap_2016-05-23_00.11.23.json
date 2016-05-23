@@ -1,0 +1,30 @@
+{
+  "C": [
+    0.8501495,
+    -0.14846176
+  ],
+  "count": 62291,
+  "pix_size": [
+    2,
+    2
+  ],
+  "frag_path": "jsquare.frag",
+  "min_iter": 0,
+  "zoom": 0.47678136825561523,
+  "M": [
+    -0.013096288,
+    -0.9797299
+  ],
+  "tex_path": "/home/ritz/git/tripzilch/glsl-liveproc/glslLiveproc/data/tex/peace2.jpg",
+  "P": [
+    0,
+    -0.4875
+  ],
+  "tex_angle": 22.52997589111328,
+  "bw_threshold": 0.5,
+  "ucount": 62291,
+  "alpha": 0.030075188726186752,
+  "tex_zoom": 0.41552096605300903,
+  "jitter_amount": 0.0020833334419876337,
+  "timestamp": "2016-05-23_00.11.23"
+}

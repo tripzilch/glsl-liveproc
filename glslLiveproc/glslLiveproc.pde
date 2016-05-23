@@ -7,13 +7,13 @@ void setup() {
   colorMode(RGB, 1.0);
 
 /*  textureMode(NORMAL);  // unsure if needed
-  noStroke();           // unsure if needed*/
+  noStroke();           // unsure if needed*/ // unsure if needed! //
 
   buf_hi = createGraphics(width, height, P2D);
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_lo;
 
-  julia = new Julia("jtrap-mars.frag", "tex/mars.png");
+  julia = new Julia("jsquare.frag", "/tmp/peacex.jpg");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
 }
@@ -40,13 +40,13 @@ class Julia {
     }
 
     void loadFrag(String frag_path) {
+      this.frag_path = frag_path;
+      this.par.setString("frag_path", frag_path);
       try {
         PShader new_frag = loadShader(frag_path);
         new_frag.set("zoom", zoom);
         if (new_frag != null) {
           this.frag = new_frag;
-          this.frag_path = frag_path;
-          this.par.setString("frag_path", frag_path);
           println(timestamp(), " === SHADER OK == ", frag_path);
         }
       } catch (java.lang.RuntimeException e) {
@@ -65,6 +65,10 @@ class Julia {
     void set(String k, float x) {
       this.frag.set(k, x);
       this.par.setFloat(k, x);
+    }
+    void set(String k, int x) {
+      this.frag.set(k, x);
+      this.par.setInt(k, x);
     }
     void set(String k, float x, float y) {
       this.frag.set(k, x, y);
@@ -108,9 +112,8 @@ class Julia {
 
 int reload_frame = 1, pmode = 0;
 boolean paused = false, dirty = true;
-int dirty_counter = 0;
-float count = 0.0,
-      Cr = 0.38276052,
+int dirty_counter = 0, count = 0;
+float Cr = 0.38276052,
       Ci = -0.05781254,
       min_iter = 0,
       zoom = 0.8711997270584106,
@@ -128,7 +131,7 @@ void draw() {
   float W = width, H = height;
   double now = millis() / 1000.0;
   if (focused && !paused) {
-    count += 1.0;
+    count += 1;
     if (reload_frame == 0) { tint(1.0); }
     if (reload_frame == 1) { julia.reloadFrag(); dirty = true; }
     if (reload_frame >= 1) { tint(0.5); reload_frame--; }
@@ -150,7 +153,8 @@ void draw() {
     julia.set("tex_angle", tangle);
     julia.set("tex_zoom", tzoom);
     julia.set("bw_threshold", bw_threshold);
-    julia.set("count", count);
+    julia.set("count", (float) count);
+    julia.set("ucount", count);
     julia.set("alpha", 1.0);
     julia.set("jitter_amount", 1.0 / buf.height);
 
@@ -232,7 +236,7 @@ void keyPressed() {
   } else if (keyCode == 'Z' /* 90 */) {
     Mx = 0.0;
     My = 0.0;
-    zoom = 1.0;
+    zoom = 1.5;
     Cr = OCr + czoom * Cr;
     Ci = OCi + czoom * Ci;
     OCr = OCi = 0.0;

@@ -21,7 +21,7 @@ varying vec4 vertTexCoord;
 
 const vec3 igamma = vec3(2.2);
 const vec3 gamma = 1.0 / igamma;
-const float MAXITER = 350.;
+const float MAXITER = 500.;
 const float BAILOUT2 = 256.0;
 const float TAU = 6.283185307179586;
 const float PHI = 1.618033988749895;
@@ -32,6 +32,13 @@ const vec2 negx = vec2(-1.0, 1.0);
 
 vec2 pixp = gl_FragCoord.xy;
 vec2 pixf = vertTexCoord.xy;
+
+// try
+//
+// uvec2 cox = unpackDouble2x32(co.x);
+// uvec2 coy = unpackDouble2x32(co.y);
+// uint r = (co.x + co.y)
+// mult hash
 
 float rand(vec2 co) {
     const float a = 12.9898;
@@ -55,23 +62,23 @@ vec3 tex(vec2 p) {
     return pow(texture2D(texture, r).xyz, igamma);
 }
 
-vec4 trap(vec2 Z, float n) {
-    vec2 X = (Z - vec2(P)) * tex_zoom * 0.5;
+vec3 tex_circular(vec2 Z, float i) {
+    vec2 X = (Z - vec2(P)) * .5 * tex_zoom;
     float L = length(X);
-    vec3 c = tex(X * mix(L,.5,smoothstep(.4,.5,L)) / L);
-    return vec4(c, L);
+    vec3 c = mix(tex(X), vec3(1.0), step(.47, L));
+    return step(0.5, 1.0 - c);
 }
 
 void main (void) {
     vec2 Z = M + zoom * (pixf + 1.0 * jitter_amount * randfc2(count));
-    //Z = Z.yx;
+    //Z.yx = Z.xy;
 
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
     vec2 dZ = vec2(1.0, 0);
 
     float i = 0.0;
-    vec4 color = (i >= min_iter) ? trap(Z, i) : vec4(0.0, 0.0, 0.0, BAILOUT2);
+    vec3 color = (i >= min_iter) ? tex_circular(Z, i) : vec3(1.0);
     for (i = 1.; i < MAXITER; i++) {
         if (Zmag2 < BAILOUT2) {
             dZ = 2.0 * vec2(Z.x * dZ.x - Z.y * dZ.y, Z.x * dZ.y + Z.y * dZ.x);
@@ -80,16 +87,17 @@ void main (void) {
             Z += C;
             Z2 = Z * Z;
             Zmag2 = Z2.x + Z2.y;
-            vec4 cL = trap(Z, i);
+            vec3 cc = tex_circular(Z, i);
             if (i >= min_iter) {
-                color = mix(cL, color, smoothstep(color.w / (2456.0/2400.0), color.w, cL.w));
+                color = min(max(color, cc), 1.0 - min(color, cc));
             }
         }
     }
     // inside black
-    color.rgb *= step(BAILOUT2, Zmag2);
+    color = step(.5, 1.0 - color);
+    color *= step(BAILOUT2, Zmag2);
     // dither, gamma, output
     //color.g = rand(gl_FragCoord.xy)+0.5;
     //color *= vec3(1.0,1.0,0.5) + randfc3(count);
-    gl_FragColor = vec4(pow(color.rgb, gamma), alpha);
+    gl_FragColor = vec4(pow(color, gamma * 1.1), alpha);
 }
