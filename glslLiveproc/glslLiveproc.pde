@@ -11,9 +11,9 @@ void setup() {
 
   buf_hi = createGraphics(width, height, P2D);
   buf_lo = createGraphics(width / 2, height / 2, P2D);
-  buf = buf_lo;
+  buf = buf_hi; // buf_lo;
 
-  julia = new Julia("jsquare.frag", "/tmp/peacex.jpg");
+  julia = new Julia("jv2.frag", "tex/ok2.jpg");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
 }
@@ -123,6 +123,7 @@ float Cr = 0.38276052,
       Py = -.175,
       tangle = -1.1399999856948853,
       bw_threshold = 0.5,
+      dissolve = 0.5,
       tzoom =  3.3863511085510254,
       czoom = 1.0,
       OCr = 0, OCi = 0;
@@ -156,6 +157,7 @@ void draw() {
     julia.set("count", (float) count);
     julia.set("ucount", count);
     julia.set("alpha", 1.0);
+    julia.set("dissolve", dissolve);
     julia.set("jitter_amount", 1.0 / buf.height);
 
     boolean dirty_now = dirty || (pmouseX != mouseX) || (pmouseY != mouseY);
@@ -276,6 +278,7 @@ void keyPressed() {
     pmode = 2;
   } else if (keyCode == 'H' /* 86 */) {
     buf = (buf == buf_lo) ? buf_hi : buf_lo;
+    //dissolve = (dissolve > 0.5) ? 0.5 : 1.0;
   } else if (keyCode == 'S' /* 83 */) {
     int mul = 6;
     PGraphics pg = createGraphics(mul * width, mul * height, P2D);

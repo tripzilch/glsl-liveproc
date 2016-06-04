@@ -26,37 +26,25 @@ const float MAXITER = 125.;
 const float BAILOUT2 = 256.0;
 const vec3 igamma = vec3(2.2);
 const vec3 gamma = 1.0 / igamma;
-const vec4 ones = vec4(1.0);
-const vec4 zeros = vec4(0.0);
-const float tx = 10.5 / 768.;
+const vec3 zom = vec3(0.0, 1.0, -1.0);
 
 const float r232 = (1.0 / 4294967296.0);
 const uint KNUTH = 2654435761u; // prime close to 2**32/PHI = 2654435769
-uvec2 AB = floatBitsToUint(vertTexCoord.xy) * KNUTH;
-uint hash_state = KNUTH * (KNUTH * (uint(count) ^ AB.x) ^ AB.y);
 
-float hashf(uint x) {
-    hash_state ^= x; // ^ (hash_state >> 16);
-    hash_state *= KNUTH;
-    return float(hash_state);
-}
-float rand0(uint k) {
-    return hashf(k) * r232;
-}
-float rand1(uint k) {
-    return hashf(k) * r232 - 0.5;
-}
-vec2 rand2(uint k) {
-    return vec2(hashf(k), hashf(k+303u)) * r232 - 0.5;
-}
-vec3 rand3(uint k) {
-    return vec3(hashf(k), hashf(k+303u), hashf(k+909u)) * r232 - 0.5;
-}
-vec4 rand4(uint k) {
-    return vec4(hashf(k), hashf(k+303u), hashf(k+909u), hashf(k+808u)) * r232 - 0.5;
-}
+uvec3 ABC = floatBitsToUint(vec3(vertTexCoord.xy, count)); // * KNUTH;
+uint hash_state = ((ABC.x * KNUTH ^ ABC.y) * KNUTH ^ ABC.z) * KNUTH;
 
-const float tex_edge = 62.0 / 1024.0;
+void hash(uint k) { hash_state ^= k; hash_state *= KNUTH; }
+void hash2(uvec2 k) { hash_state ^= k.x; hash_state *= KNUTH; hash_state ^= k.y; hash_state *= KNUTH; }
+uint uhash(uint k) { hash_state ^= k; hash_state *= KNUTH; return hash_state; }
+
+float rand0(uint k) { return float(uhash(k)) * r232; }
+float rand1(uint k) { return float(uhash(k)) * r232 - 0.5; }
+vec2 rand2(uint k) { return  r232 * vec2(uhash(k), uhash(k + 303u)) - 0.5; }
+vec3 rand3(uint k) { return  r232 * vec3(uhash(k), uhash(k + 303u), uhash(k + 909u)) - 0.5; }
+vec4 rand4(uint k) { return  r232 * vec4(uhash(k), uhash(k + 303u), uhash(k + 909u), uhash(k + 808u)) - 0.5; }
+
+const float tex_edge = 64.0 / 1024.0;
 const vec2 tex_corner = vec2(tex_edge * .5, tex_edge * -.5 + 1.0);
 vec3 tc00 = texture2D(texture, tex_corner.xx).rgb;
 vec3 tc01 = texture2D(texture, tex_corner.xy).rgb;
@@ -75,26 +63,37 @@ vec3 tex_square(vec2 p) {
                  mix(tc01, tc11, corner_mix.x), corner_mix.y);
     c = mix(c, texture2D(texture, r + .5).xyz, edge_mix.x * edge_mix.y);
     return pow(c, igamma);
+    //return mix(vec3(.4,.3,.2), vec3(1.,1.,1.), smoothstep(.4,.45,length(p)));
+}
+vec3 tex_back(vec2 p) {
+    vec2 r = rot * p;
+    vec2 corner_mix = smoothstep(-.5, .5, r);
+    vec3 c = mix(mix(tc00, tc10, corner_mix.x),
+                 mix(tc01, tc11, corner_mix.x), corner_mix.y);
+    return pow(c, igamma);
 }
 
-const float tr0 = 0.49, tr1 = 0.499;
 vec4 trap(vec2 Z, float i) {
   vec2 X = (Z - P) * tex_zoom;
   float d = length(X);
-  return vec4(tex_square(0.00125 * rand2(33u) + X), d);
+  return vec4(tex_square(0.001 * rand2(33u) + X), d);
+}
+vec4 trap0(vec2 Z, float i) {
+  vec2 X = (Z - P) * tex_zoom;
+  float d = length(X);
+  return vec4(tex_back(X), d);
 }
 
 void main (void) {
-    if (rand0(11u) > dissolve) discard;
     vec2 RND = rand2(22u);
     vec2 Z = (RND * jitter_amount + vertTexCoord.xy) * zoom + M;
+    //Z.xy=Z.yx*zom.zy;
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
 
     // orbit trap vars
     float i = 0.0;
-    //vec4 ca = (i >= min_iter) ? trap(Z,i) : zeros;
-    vec4 ca = trap(Z,i);
+    vec4 ca = (i >= min_iter) ? trap(Z,i) : trap0(Z,i);
     for (i = 1.; i < MAXITER; i++) {
         if (Zmag2 < BAILOUT2) {
             // iterate Z
@@ -106,8 +105,10 @@ void main (void) {
             Z2 = Z * Z;
             Zmag2 = Z2.x + Z2.y;
             // orbit trap
-            vec4 ci = trap(Z, i);
-            ca = mix(min(ci, ca), ca, smoothstep(1.5, 2.0, ci.a));
+            if (i >= min_iter) {
+                vec4 ci = trap(Z, i);
+                ca = mix(min(ci, ca), ca, smoothstep(0.35, 1.0, ci.a));
+            }
         } else { i = MAXITER;}
     }
     //ca.rgb = smoothstep(0.0, 1.0, ca.rgb);

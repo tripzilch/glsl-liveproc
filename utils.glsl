@@ -32,8 +32,6 @@ highp float rand(vec2 co)
     return fract(sin(sn) * c);
 }
 
-/*
-
 #ifndef __noise_hlsl_
 #define __noise_hlsl_
 
@@ -67,4 +65,3 @@ float noise( float3 x )
 
 #endif
 
-*/

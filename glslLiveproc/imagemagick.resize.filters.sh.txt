@@ -1,0 +1,3 @@
+convert /tmp/qtrap_2016-05-23_00.28.54.png -colorspace RGB \
+          -filter Lanczos -define filter:blur=.9891028367558475 \
+          -distort Resize x1080    -colorspace sRGB dovemarker-1.png
