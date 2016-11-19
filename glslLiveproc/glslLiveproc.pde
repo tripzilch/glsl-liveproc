@@ -13,7 +13,7 @@ void setup() {
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_hi; // buf_lo;
 
-  julia = new Julia("jv2.frag", "tex/ok2.jpg");
+  julia = new Julia("gentex.frag", "tex/ok2.jpg");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
 }
