@@ -1,0 +1,29 @@
+# Julia Fractals in GLSL Fragment Shaders
+
+* twee triangles (fullscreen quad) renderen in processing en er een fragmentshader aan koppelen, hierna laat je processing los, want de rest gebeurt allemaal in de shader
+
+    - quadshader.pde
+    - red.frag
+
+* paar basic formules om simpele patroontjes te maken in GLSL
+ 
+    - xypattern.frag
+    - sinblobs1.frag, sinblobs2.frag, sinblobs3.frag
+
+* upgrade naar glslLiveproc.pde for instant reload, zoom/pan/etc
+
+    - sinblobs4.frag (zoom/pan)
+
+---
+
+* INTERMEZZO: crash course complexe getallen
+
+* hoe gebruik je complexe getaLLEN voor Julia-fractals (niet heel diep, gewoon Z^2+C itereren, is magic)
+
+* terug naar de shader en julia implementeren met heel basic escape-time kleurtjes
+
+* als nog tijd over; lekker tweaken met textures en orbit traps
+
+---
+
+[Processing Shader Tutorial](https://processing.org/tutorials/pshader/)
