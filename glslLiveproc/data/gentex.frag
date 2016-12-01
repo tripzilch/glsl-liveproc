@@ -57,9 +57,10 @@ const float r232 = (1.0 / 4294967296.0);
     2**32 / PHI / PHI = 1640531526.5028, nearest prime = 1640531513u
 -------------------------------------------------------------------- */
 
-#define KNUTH 0x9e3779b1
-#define KNUTH2 0x61c88639);2654435761u;
-const uvec2 KNUTH2 = uvec2(2654435761u, 1640531513u);
+#define KNUTH_a 2654435761u
+#define KNUTH_b 1640531513u
+
+const uvec2 KNUTH2 = uvec2(KNUTH_a, KNUTH_b);
 // here's a bunch of random hex digits selected from 3,5,6,9,A,C (bits 50% on)
 // const uvec4 seed = uvec4(0xC9A55996, 0x56969A33, 0x6933AA96, 0x59A6CC56); // #1
 // const uvec4 seed = uvec4(0x993AA396, 0x6A3993CA, 0xAAA566AA, 0x353A3659); // #2
@@ -79,22 +80,27 @@ bool cell_mask(vec2 cq, vec2 co, uint seed2) {
     h ^= seed2;
 
     h ^= seed;
-    h *= KNUTH;
-    vec4 m2 = pow(r232 * h + cq.x - co.x, 2.0);
+    h *= KNUTH_a;
+    vec4 m2 = pow(r232 * h + cq.x - co.x, vec4(2.0));
 
     h ^= seed.wxyz;
-    h *= KNUTH;
-    m2 += pow(r232 * h + cq.y - co.y, 2.0);
+    h *= KNUTH_a;
+    m2 += pow(r232 * h + cq.y - co.y, vec4(2.0));
 
     h ^= seed.zwxy;
-    h *= KNUTH;
-    bvec4 P = lessThan(r232 * h, vec4(fP(cq)));
+    h *= KNUTH_a;
+    vec4 P = step(r232 * h, vec4(fP(cq)));
 
     h ^= seed.yzwx;
-    h *= KNUTH;
+    h *= KNUTH_a;
     vec4 r2 = (r232 * 0.375) * h + fr(co) * 0.625;
 
-    return any(lessThan(m2, r2) && P);
+
+    return any(lessThan(m2, r2 * P));
+
+    // m2 < r2 && h < fP
+    // (m2 - r2) < 0 && (h - fP) < 0
+
 }
 
 const vec3 ee = vec3(-0.5, 0.5, 0.0);

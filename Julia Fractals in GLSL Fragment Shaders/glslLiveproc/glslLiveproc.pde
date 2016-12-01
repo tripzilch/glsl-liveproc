@@ -15,6 +15,24 @@ void setup() {
   julia = new Julia("julia-trap.frag", "scn1000c.png");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
+  println(" ------ Commands:");
+  println("          c   Mode C, adjust C parameter with mouse");
+  println("          v   Mode V, adjust texture position with mouse");
+  println("          f   Mode F, adjust nothing, \"freeze\", for panning and zooming");
+  println("        [ ]   decrease/increase texture zoom factor");
+  println("        ; '   increase/decrease bw_threshold (not used in most shaders)");
+  println("        , .   rotate texture right/left");
+  println("        - =   fine adjust zoom");
+  println("        7 8   decrease/increase min_iter");
+  println("        9 0   decrease/increase \"C zoom\" (finer precision on C parameter)");
+  println(" mouse drag   pan ");
+  println("scrollwheel   zoom");
+  println("          z   reset zoom factors");
+  println("          r   reload + recompile fragment shader from disk");
+  println("          h   switch between hi/lo resolution renderbuffer");
+  println("          s   save image in 6x resolution to /tmp, save parameters as JSON to ./save");
+  println("          p   pause all rendering and output current parameters to stdout");
+  println("          l   select + load new texture (JPG or PNG)");
 }
 
 class Julia {
