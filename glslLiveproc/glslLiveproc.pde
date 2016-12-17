@@ -13,7 +13,7 @@ void setup() {
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_hi; // buf_lo;
 
-  julia = new Julia("gentex.frag", "tex/ok2.jpg");
+  julia = new Julia("jstorm.frag", "tex/storm-marrow-1024a.png");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
   println(" ------ Commands:");
@@ -81,13 +81,13 @@ class Julia {
       return new JSONArray(lx);
     }
 
-    void set(String k, float x) {
-      this.frag.set(k, x);
-      this.par.setFloat(k, x);
-    }
     void set(String k, int x) {
       this.frag.set(k, x);
       this.par.setInt(k, x);
+    }
+    void set(String k, float x) {
+      this.frag.set(k, x);
+      this.par.setFloat(k, x);
     }
     void set(String k, float x, float y) {
       this.frag.set(k, x, y);
