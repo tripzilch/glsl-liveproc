@@ -1,3 +1,12 @@
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+#define PROCESSING_TEXTURE_SHADER
+
+varying vec4 vertColor;
+varying vec4 vertTexCoord;
+
 // Multiplicative hash primes
 //
 // PHI = .5 + .5 * 5 ** .5 -- aka Golden Ratio, aka the most irrational number
@@ -22,3 +31,9 @@ float rand1(uint k) { return float(uhash(k)) * r232 - 0.5; }
 vec2 rand2(uint k) { return  r232 * vec2(uhash(k), uhash(k + 303u)) - 0.5; }
 vec3 rand3(uint k) { return  r232 * vec3(uhash(k), uhash(k + 303u), uhash(k + 909u)) - 0.5; }
 vec4 rand4(uint k) { return  r232 * vec4(uhash(k), uhash(k + 303u), uhash(k + 909u), uhash(k + 808u)) - 0.5; }
+
+void main (void) {
+    vec2 wob = sin(count * vec2(0.1, 0.062) + vec2(-0.5,.5));
+    vec2 st = zoom * vertTexCoord.st + M + wob * .01;
+    gl_FragColor = vec4(vec3(rand_dot_grid(st * 4.0)), 1.0);
+}

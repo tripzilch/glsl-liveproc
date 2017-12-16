@@ -3,7 +3,7 @@ Julia julia;
 PGraphics buf_hi, buf_lo, buf;
 
 void setup() {
-  size(960, 480, P2D);
+  size(640, 360, P2D);
   colorMode(RGB, 1.0);
 
 /*  textureMode(NORMAL);  // unsure if needed
@@ -13,11 +13,7 @@ void setup() {
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_hi; // buf_lo;
 
-<<<<<<< HEAD
-  julia = new Julia("jstorm.frag", "tex/storm-marrow-1024a.png");
-=======
-  julia = new Julia("pathtrace.frag", "tex/woink3.png");
->>>>>>> 01a6ea7244cc41fea4b77aa5f90e533aa1d0f8fc
+  julia = new Julia("testrand.frag", "tex/schaap.png");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
   println(" ------ Commands:");
@@ -35,7 +31,7 @@ void setup() {
   println("          z   reset zoom factors");
   println("          r   reload + recompile fragment shader from disk");
   println("          h   switch between hi/lo resolution renderbuffer");
-  println("          s   save image in 6x resolution to /tmp, save parameters as JSON to ./save");
+  println("          s   save image in extra high resolution to /tmp, save parameters as JSON to ./save");
   println("          p   pause all rendering and output current parameters to stdout");
   println("          l   select + load new texture (JPG or PNG)");
 
@@ -67,11 +63,11 @@ class Julia {
       this.par.setString("frag_path", frag_path);
       try {
         PShader new_frag = loadShader(frag_path);
+        PGraphics test_buf = createGraphics(32, 32, P2D);
         new_frag.set("zoom", zoom);
-        if (new_frag != null) {
-          this.frag = new_frag;
-          println(timestamp(), " === SHADER OK == ", frag_path);
-        }
+        test_buf.shader(new_frag);
+        this.frag = new_frag;
+        println(timestamp(), " === SHADER OK == ", frag_path);
       } catch (java.lang.RuntimeException e) {
         println(timestamp(), " === SHADER ERROR == ", frag_path);
         println(e.getMessage());
@@ -104,7 +100,6 @@ class Julia {
 
     void render(PGraphics buf, float x0, float y0, float x1, float y1) {
       float W = buf.width, H = buf.height;
-      this.set("pix_size", 2 * (x1 - x0) / buf.width, 2 * (y1 - y0) / buf.height);
       buf.beginDraw();
         buf.shader(frag);
         buf.noStroke();
@@ -135,7 +130,7 @@ class Julia {
 
 int reload_frame = 1, pmode = 0;
 boolean paused = false, dirty = true;
-int dirty_counter = 0, count = 0;
+int not_dirty_count = 0, count = 0, subs = 1, sub_i = 0;
 float Cr = 0.38276052,
       Ci = -0.05781254,
       min_iter = 0,
@@ -150,6 +145,7 @@ float Cr = 0.38276052,
       tzoom =  3.3863511085510254,
       czoom = 1.0,
       OCr = 0, OCi = 0;
+int   n_samples = 1;
 
 void draw() {
   float W = width, H = height;
@@ -176,22 +172,43 @@ void draw() {
     julia.set("zoom", zoom);
     julia.set("tex_angle", tangle);
     julia.set("tex_zoom", tzoom);
-    julia.set("bw_threshold", bw_threshold);
     julia.set("count", (float) count);
-    julia.set("ucount", count);
     julia.set("alpha", 1.0);
-    julia.set("dissolve", dissolve);
-    julia.set("jitter_amount", 1.0 / buf.height);
+    julia.set("jitter_amount", 0.5 / buf.height);
 
+    not_dirty_count++;
     boolean dirty_now = dirty || (pmouseX != mouseX) || (pmouseY != mouseY);
     dirty = false;
-    if (!dirty_now) {
-      dirty_counter++;
-      julia.set("alpha", 4.0 / (dirty_counter + 4));
+    if (dirty_now) not_dirty_count = 0;
+
+    /*if (not_dirty_count == 0) {
+      buf = buf_lo;
+      subs = 1; n_samples = subs * subs;
+      sub_i = 0;
+      println("");
+      print("LO N = ", subs * subs);
+    } else if (not_dirty_count == 1) {
+      buf = buf_hi;
+      subs = 1; n_samples = subs * subs;
+      sub_i = 0;
+      print("|| HI N = ", subs * subs);
+    } else if (sub_i < subs * subs) {
+      sub_i++;
+      print(", ", subs * subs - sub_i);
+    } else if (subs > 0 && subs < 8) {
+      subs *= 2; n_samples = subs * subs;
+      sub_i = 0;
+      print("|| HI N = ", subs * subs);
     } else {
-      dirty_counter = 0;
+      subs = 0;
     }
-    julia.render(buf);
+    julia.set("N_SAMPLES", n_samples);
+
+    if (subs > 0) {
+      julia.render(buf, subs, subs, sub_i);
+      image(buf, 0, 0, W, H);
+    }*/
+    julia.render(buf, subs, subs, sub_i);
     image(buf, 0, 0, W, H);
   }
 }
@@ -304,7 +321,8 @@ void keyPressed() {
     //dissolve = (dissolve > 0.5) ? 0.5 : 1.0;
   } else if (keyCode == 'S' /* 83 */) {
     int mul = 6;
-    PGraphics pg = createGraphics(mul * width, mul * height, P2D);
+    int W1 = width * mul, H1 = height * mul;
+    PGraphics pg = createGraphics(W1, H1, P2D);
     String filename = "qtrap_" + timestamp();
     String json_filename = "save/" + filename + ".json";
     String image_filename = "/tmp/" + filename + ".png";
@@ -314,26 +332,18 @@ void keyPressed() {
     saveJSONObject(julia.par, json_filename);
 
     println(timestamp(), " === RENDERING *" + mul + " @ " + pg.width + "x" + pg.height);
-    for (int i = 0; i < mul * mul; i++) {
-      print("block", i, "/", mul * mul, "   ");
-      print("pass ");
-      // a/d = 4
-      // a/(d+7) = 1
-      //
-      // a = d+7
-      // 7/3 = d
-      julia.set("pix_size", 1.0 / pg.height, 1.0 / pg.height);
-      for(int pass = 0; pass < 12; pass++) {
-        print(pass + ", ");
-        julia.set("jitter_amount", (16.0 / (5.0 + pass)) / pg.height);
-        julia.set("count", pass);
-        julia.set("alpha", 1.0 / (pass + 1));
-        julia.render(pg, mul, mul, i);
-      }
+    julia.set("jitter_amount", 0.5 / pg.height);
+    julia.set("alpha", 1.0);
+    julia.set("N_SAMPLES", 64);
+    int subs = 10, sub_i = 0;
+    int blocks = subs * subs;
+    print(blocks, "blocks.. ");
+    for (int i = 0; i < blocks; i++) {
+      print(i, ", ");
+      julia.set("count", (float) (i + 23523));
+      julia.render(pg, subs, subs, i);
       pg.loadPixels();
-      println("L");
     }
-    //println(timestamp(), " === Loading pixels.. ");
     println(timestamp(), " === writing", image_filename, "...");
     pg.save(image_filename);
     println(timestamp(), " === done. ");

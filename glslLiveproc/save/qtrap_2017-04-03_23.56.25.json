@@ -1,0 +1,25 @@
+{
+  "C": [
+    -0.8010416,
+    0.18124986
+  ],
+  "N_SAMPLES": 64,
+  "count": 7221,
+  "frag_path": "j-trapmul-nsample.frag",
+  "min_iter": 0,
+  "zoom": 0.05526752397418022,
+  "M": [
+    0.025150694,
+    -0.31087762
+  ],
+  "tex_path": "/home/ritz/git/tripzilch/glsl-liveproc/glslLiveproc/data/tex/splats3-mask.png",
+  "P": [
+    -1.325,
+    1.925
+  ],
+  "tex_angle": -0.5000001192092896,
+  "alpha": 1,
+  "tex_zoom": 1.1576248407363892,
+  "jitter_amount": 0.0010416667209938169,
+  "timestamp": "2017-04-03_23.56.25"
+}

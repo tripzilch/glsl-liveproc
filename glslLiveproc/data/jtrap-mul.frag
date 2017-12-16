@@ -33,29 +33,41 @@ const vec2 negx = vec2(-1.0, 1.0);
 vec2 pixp = gl_FragCoord.xy;
 vec2 pixf = vertTexCoord.xy;
 
-// try
+// --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ----
+// Multiplicative hash primes
 //
-// uvec2 cox = unpackDouble2x32(co.x);
-// uvec2 coy = unpackDouble2x32(co.y);
-// uint r = (co.x + co.y)
-// mult hash
+// PHI = .5 + .5 * 5 ** .5 -- aka Golden Ratio, aka the most irrational number
+//
+// 2**32 / PHI       = 2654435769.4972, nearest prime = 2654435761u = 0x9e3779b1
+// 2**32 / PHI / PHI = 1640531526.5028, nearest prime = 1640531513u = 0x61c88639
+const uint KNUTH = 0x9e3779b1u;
+const uvec2 KNUTH2 = uvec2(0x9e3779b1u, 0x61c88639u);
+const uvec4 useed = uvec4(0x55336963u, 0x96AC5A36u, 0x393C6A9Au, 0x33C39A9Cu); // #0
+const vec4 fseed = vec4(3395695930.0, 1553552949.0, 1771750995.0, 2628335962.0); // #6
 
-float rand(vec2 co) {
-    const float a = 12.9898;
-    const float b = 78.233;
-    const float c = 43758.5453;
-    float dt= dot(co.xy, vec2(a, b));
-    float sn= mod(dt, 3.14);
-    return fract(sin(sn) * c) - 0.5;
-}
-float randfc(float k) { return rand(pixp + k * 48.3); }
+// 1 / 2**32
+const float r232 = (1.0 / 4294967296.0);
 
-vec2 randfc2(float k) { return vec2(rand(pixp + k * 29.9),
-                                    rand(pixp + k * 127.6)); }
+// per pixel random hash
+uvec3 ABC = floatBitsToUint(vec3(vertTexCoord.xy, count));
+uint hash_state = ((ABC.x * KNUTH ^ ABC.y) * KNUTH ^ ABC.z) * KNUTH;
+//uint hash_state = floatBitsToUint(dot(vec3(vertTexCoord.xy, count), fseed.xyz)) * KNUTH;
 
-vec3 randfc3(float k) { return vec3(rand(pixp + k * 89.2),
-                                    rand(pixp + k * 55.1),
-                                    rand(pixp + k * 34.0)); }
+void hash(uint k) { hash_state ^= k; hash_state *= KNUTH; }
+uint uhash(uint k) { hash_state ^= k; hash_state *= KNUTH; return hash_state; }
+
+float rand1f(uint k) { return float(uhash(k)) * r232; }
+float rand1n(uint k) { return float(uhash(k)) * r232 - 0.5; }
+vec2 rand2f(uint k) { return  r232 * vec2(uhash(k), uhash(k + 303u)); }
+vec2 rand2n(uint k) { return  r232 * vec2(uhash(k), uhash(k + 303u)) - 0.5; }
+vec3 rand3f(uint k) { return  r232 * vec3(uhash(k), uhash(k + 303u), uhash(k + 909u)); }
+vec3 rand3n(uint k) { return  r232 * vec3(uhash(k), uhash(k + 303u), uhash(k + 909u)) - 0.5; }
+vec4 rand4f(uint k) { return  r232 * vec4(uhash(k), uhash(k + 303u), uhash(k + 909u), uhash(k + 808u)); }
+vec4 rand4n(uint k) { return  r232 * vec4(uhash(k), uhash(k + 303u), uhash(k + 909u), uhash(k + 808u)) - 0.5; }
+
+// vec4 rand4x(uint k) { uvec4 r = uvec4(k) ^ useed; return r232 * vec4(uhash(r.x), uhash(r.y), uhash(r.z), uhash(r.w)); }
+
+// --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ----
 
 vec3 tex(vec2 p) {
     mat2 rot = mat2( cos(tex_angle), -sin(tex_angle),
@@ -85,7 +97,7 @@ vec3 texplex(vec2 Z, vec2 dZ) {
 }
 
 void main (void) {
-    vec2 Z = M + zoom * (pixf + 2.0 * jitter_amount * randfc2(count));
+    vec2 Z = M + zoom * (pixf + 2.0 * jitter_amount * rand2n(77u));
 
     vec2 Z2 = Z * Z;
     float Zmag2 = Z2.x + Z2.y;
@@ -110,5 +122,6 @@ void main (void) {
     // dither, gamma, output
     //color.g = rand(gl_FragCoord.xy)+0.5;
     //color *= vec3(1.0,1.0,0.5) + randfc3(count);
+    color = mix(color, rand3n(555u), 1/64.0);
     gl_FragColor = vec4(pow(color, gamma * 1.1), alpha);
 }

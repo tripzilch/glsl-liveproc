@@ -1,0 +1,25 @@
+{
+  "C": [
+    -0.3548746,
+    -0.6621093
+  ],
+  "N_SAMPLES": 64,
+  "count": 2166,
+  "frag_path": "j-trapmul-nsample.frag",
+  "min_iter": 0,
+  "zoom": 0.11305668205022812,
+  "M": [
+    -0.5041184,
+    0.1563128
+  ],
+  "tex_path": "tex/splats3_blur.jpg",
+  "P": [
+    -1.5375,
+    0.1875
+  ],
+  "tex_angle": -2.049999952316284,
+  "alpha": 1,
+  "tex_zoom": 1,
+  "jitter_amount": 0.0010416667209938169,
+  "timestamp": "2017-04-02_20.33.55"
+}
