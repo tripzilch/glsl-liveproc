@@ -111,25 +111,35 @@ vec3 cos_hemi(vec3 n, uint i) {
   return normalize(n + p);
 }
 
+const float d_max = 16.0;
 float intersect(vec3 p, vec3 r) {
-    float res = -1.0;
-    float tmax = 16.0;
-    float t = 0.01;
+    float d = 0.01;
     for(int i = 0; i < 128; i++) {
-        float h = DE(p + r * t);
-        if(h < 0.0001 || t > tmax) break;
-        t += h;
+        float h = DE(p + r * d);
+        if(h < 0.0001 || d > d_max) break;
+        d += h;
     }    
-    if(t < tmax) res = t;
-    return res;
+    return max(d, d_max);
+}
+
+// vec3 pos_light(vec3 p, vec3 n) {
+//   intersect(p, cos_hemi(n, 8841u)) > 0.0
+//   return vec3(0.4) * vec3(1.2, 1.1, 1.0);
+// }
+const vec3 sundir = vec3(-.3, .8, .1);
+const vec3 sky = vec3(.2, .2, .7);
+const vec3 sky2 = vec3(.03, .03, .2);
+const vec3 mist = vec3(.3, .25, .35);
+const vec3 sun = vec3(1.0, 1.0, .7);
+vec3 skycolor(r) {
+  float s = pow(dot(r, sundir), 8.0);
+  float c = mix(sky2, sky, smoothstep(0, 1, s));
+  c = mix(c, mist, smoothstep(0.6, 1, 1 / (1 + r.y)));
+  c = mix(c, sun, smoothstep(.7, .9, s * s));
+  return c;
 }
 
 vec3 pos_color(vec3 p, vec3 n) {
-  return vec3(0.4) * vec3(1.2, 1.1, 1.0);
-}
-
-vec3 pos_light(vec3 p, vec3 n) {
-  intersect(p, cos_hemi(n, 8841u)) > 0.0
   return vec3(0.4) * vec3(1.2, 1.1, 1.0);
 }
 
@@ -140,32 +150,25 @@ vec3 ray_bounce(vec3 p, vec3 n, vec3 r) {
   return cos_hemi(n, 7721u);
 }
 
+const uint num_levels = 4u;
 vec3 ray_color(vec3 p, vec3 r, uint num_levels) {
-    vec3 acol = vec3(0.0);
     vec3 mcol = vec3(1.0);
 
     // iteratively create num_levels bounces of global illumination
-    float t0 = intersect(p, r); // returns dist
-    float t = T0; // returns dist
-    if(t < 0.0) { return skycolor(r); }
-    p += r * t;
-    for (uint i = 0u; t >=0.0 && i < num_levels; i++) {
-        vec3 n = calc_normal(p);
-
-        vec3 surface_color = pos_color(p, n);
-        mcol *= surface_color;
-
-        // compute lighting
-        vec3 light_color = pos_light(p, n);
-        acol += mcol * light_color;
-
-        // prepare ray for indirect lighting gathering
-        r = ray_bounce(p, n, r);
-        t = intersect(p, r); // returns dist
-        p += r * t;
+    for (uint i = 0u; i < num_levels; i++) {
+      float d = intersect(p, r); // returns dist
+      if(d >= dmax) { 
+        return mcol * skycolor(r); 
+      }
+      p += r * d;
+      vec3 n = calc_normal(p);
+      vec3 surface_color = pos_color(p, n);
+      mcol *= surface_color;
+      
+      r = ray_bounce(p, n, r);
     }
 
-    return tcol;
+    return vec3(0.0);
 }
 
 // compute the color of a pixel
@@ -174,7 +177,6 @@ vec3 pix_color(vec2 pixel, vec2 resolution) {
     const float fov = 2.5;
     const float focus_distance = 1.3;
     const float blur_amount = 0.0015;
-    const uint  num_levels = 4u;
 
     vec3 col = vec3(0.0);
     for(uint i = 0u; i < N_SAMPLES; i++) {
@@ -197,7 +199,7 @@ vec3 pix_color(vec2 pixel, vec2 resolution) {
         rd += gd.x * uu + gd.y * vv;
 
         // accumulate path
-        col += ray_color(ro, normalize(rd), num_levels);
+        col += ray_color(ro, normalize(rd));
     }
     col = col / float(N_SAMPLES);
 
