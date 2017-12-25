@@ -13,7 +13,7 @@ void setup() {
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_hi; // buf_lo;
 
-  julia = new Julia("testrand.frag", "tex/schaap.png");
+  julia = new Julia("pathtrace.frag", "tex/schaap.png");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
   println(" ------ Commands:");
@@ -310,6 +310,7 @@ void keyPressed() {
   } else if (keyCode == 'P' /* 80 */) {
     paused = !paused;
     println(julia.par.format(4));
+    println(nf(frameRate, 2, 1) + "fps -- " + nf(frameCount, 3) + " frames");
   } else if (keyCode == 'F' /* 70 */) {
     pmode = 0;
   } else if (keyCode == 'C' /* 67 */) {

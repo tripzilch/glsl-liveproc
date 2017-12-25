@@ -61,6 +61,7 @@ uvec4 hash_state = ((hash_1 ^ magic0) * KNUTH ^ magic1) * KNUTH;
 
 void hash(uint k) { 
   hash_state = (hash_state.garb ^ (magic2 + k)) * KNUTH; 
+  //hash_state = (hash_state ^ (magic2 + k)) * KNUTH; 
 }
 
 float rand1f(uint k) { hash(k); return float(hash_state.x) * r232; }
@@ -74,28 +75,60 @@ vec4 drand4f(uint k) { hash(k); return vec4(hash_state.xyzw) * r231; }
 
 // --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ----
 
+// -- Special random functions
+
+vec3 cos_hemi(vec3 n, uint i) {
+  //hash(1112u * i);
+  //vec2 uv = vec2(hash_state.ba) * vec2(TAU * r232, r231) + vec2(0.0, -1.0); // (0..TAU, -1..1)
+  vec2 uv = rand2f(1112u * i);
+  uv.x *= TAU;
+  uv.y = uv.y * 2 - 1;
+  vec3 p = vec3(sqrt(1.0 - uv.y * uv.y) * vec2(cos(uv.x), sin(uv.x)), uv.y);
+  return normalize(n + p);
+}
+
 // -- SD functions
-float maxcomp(vec3 p ) { return max(p.x,max(p.y,p.z));}
-float sd_box(vec3 p, vec3 b)
-{
-  vec3  di = abs(p) - b;
-  float mc = maxcomp(di);
+
+float max3(vec3 p ) { return max(p.x, max(p.y, p.z)); }
+
+float sd_box(vec3 p, vec3 b) {
+  vec3 di = abs(p) - b;
+  float mc = max3(di);
   return min(mc, length(max(di, 0.0)));
 }
-float sd_sphere(vec3 p, float radius) { return length(p) - radius; }
+
+float sd_sphere(vec3 p, float radius) { 
+  return length(p) - radius; 
+}
+
 float sd_torus(vec3 p, vec2 t) {
   vec2 q = vec2(length(p.xz) - t.x, p.y);
   return length(q) - t.y;
 }
-float sd_plane(vec3 p, vec4 n) { return dot(p, n.xyz) + n.w; } // n must be normalized
+
+float sd_plane(vec3 p, vec4 n) { // n must be normalized
+return dot(p, n.xyz) + n.w; 
+}
+
+// -- scene and distance estimation
 
 float DE(vec3 p) {
-  float d = sdPlane(p, vec4(0.0, 1.0, 0.0, 0.0));
-  d = min(d, sd_sphere(p - vec3(0.0, -1.0, 0.0), 1.0));
+  float d = sd_plane(p, vec4(0.0, 1.0, 0.0, 0.0));
+  d = min(d, sd_sphere(p - vec3(0.0, 1.0, 0.0), 1.0));
   return d;
 }
 
-// -- tracing functions
+const float d_max = 64.0;
+float intersect(vec3 p, vec3 r) {
+    float d = 0.01;
+    for(int i = 0; i < 128; i++) {
+        float h = DE(p + r * d);
+        if(h < 0.0001 || d > d_max) break;
+        d += h;
+    }    
+    return min(d, d_max);
+}
+
 vec3 calc_normal(vec3 p) {
     vec3 eps = vec3(0.0001, 0.0, 0.0);
     return normalize(vec3(
@@ -104,43 +137,31 @@ vec3 calc_normal(vec3 p) {
       DE(p + eps.yyx) - DE(p - eps.yyx)));
 }
 
-vec3 cos_hemi(vec3 n, uint i) {
-  vec2 uv = rand2d(1112u * i) * vec2(TAU, 2.0);
-  uv.y -= 1.0;
-  vec3 p = vec3(sqrt(1.0 - uv.y * uv.y) * vec2(cos(uv.x), sin(uv.x)), uv.y);
-  return normalize(n + p);
-}
+// -- lights
 
-const float d_max = 16.0;
-float intersect(vec3 p, vec3 r) {
-    float d = 0.01;
-    for(int i = 0; i < 128; i++) {
-        float h = DE(p + r * d);
-        if(h < 0.0001 || d > d_max) break;
-        d += h;
-    }    
-    return max(d, d_max);
+const vec3 sundir = vec3(-.3, -.8, -.1);
+const vec3 sky = vec3(.2, .2, .7);
+const vec3 sky2 = vec3(.03, .03, .2);
+const vec3 mist = vec3(.3, .25, .35);
+const vec3 sun = vec3(1.0, 1.0, .7) * 8.0;
+
+vec3 skycolor(vec3 r) {
+  float s = pow(dot(r, sundir), 8.0);
+  vec3 c = mix(sky2, sky, smoothstep(0.0, 1.0, s));
+  c = mix(c, mist, smoothstep(0.6, 1.0, 1.0 / (1.0 + r.y)));
+  c = mix(c, sun, smoothstep(0.7, 0.9, s * s));
+  return c;//vec3(max(vec2(0.0), r.yy), 1.0);
 }
 
 // vec3 pos_light(vec3 p, vec3 n) {
 //   intersect(p, cos_hemi(n, 8841u)) > 0.0
 //   return vec3(0.4) * vec3(1.2, 1.1, 1.0);
 // }
-const vec3 sundir = vec3(-.3, .8, .1);
-const vec3 sky = vec3(.2, .2, .7);
-const vec3 sky2 = vec3(.03, .03, .2);
-const vec3 mist = vec3(.3, .25, .35);
-const vec3 sun = vec3(1.0, 1.0, .7);
-vec3 skycolor(r) {
-  float s = pow(dot(r, sundir), 8.0);
-  float c = mix(sky2, sky, smoothstep(0, 1, s));
-  c = mix(c, mist, smoothstep(0.6, 1, 1 / (1 + r.y)));
-  c = mix(c, sun, smoothstep(.7, .9, s * s));
-  return c;
-}
+
+// -- material
 
 vec3 pos_color(vec3 p, vec3 n) {
-  return vec3(0.4) * vec3(1.2, 1.1, 1.0);
+  return vec3(0.6) * vec3(1.0, 0.9, 0.8);
 }
 
 vec3 ray_bounce(vec3 p, vec3 n, vec3 r) {
@@ -150,67 +171,61 @@ vec3 ray_bounce(vec3 p, vec3 n, vec3 r) {
   return cos_hemi(n, 7721u);
 }
 
+// -- global illumination pathtracer
+
 const uint num_levels = 4u;
-vec3 ray_color(vec3 p, vec3 r, uint num_levels) {
+vec3 ray_color(vec3 p, vec3 r) {
     vec3 mcol = vec3(1.0);
+    vec3 n;
 
     // iteratively create num_levels bounces of global illumination
     for (uint i = 0u; i < num_levels; i++) {
-      float d = intersect(p, r); // returns dist
-      if(d >= dmax) { 
+      float d = intersect(p, r);
+      if(d >= d_max) { // we hit the sky
         return mcol * skycolor(r); 
-      }
+      }      
       p += r * d;
-      vec3 n = calc_normal(p);
+      n = calc_normal(p);
       vec3 surface_color = pos_color(p, n);
       mcol *= surface_color;
       
-      r = ray_bounce(p, n, r);
+      r = ray_bounce(p, n, r);   
     }
 
-    return vec3(0.0);
+    return vec3(0.0, 0.0, 0.0);
 }
 
 // compute the color of a pixel
-const uint N_SAMPLES = 32u;
-vec3 pix_color(vec2 pixel, vec2 resolution) {
-    const float fov = 2.5;
-    const float focus_distance = 1.3;
-    const float blur_amount = 0.0015;
-
-    vec3 col = vec3(0.0);
-    for(uint i = 0u; i < N_SAMPLES; i++) {
-        // screen coords with antialiasing
-        vec2 p = (pixel * 2.0 + drand2f(i + 7u) - resolution) / resolution.y;
-
-        // get camera position, and right/up/front axis
-        vec3 ro = vec3(0.0, 1.0, -10.0);
-        vec3 uu = vec3(1.0, 0.0, 0.0);
-        vec3 vv = vec3(0.0, 1.0, 0.0);
-        vec3 ww = vec3(0.0, 0.0, 1.0);
-
-        // create ray with depth of field
-        vec3 er = normalize(vec3(p.xy, fov));
-        vec3 rd = er.x * uu + er.y * vv + er.z * ww;
-
-        vec3 go = blur_amount * vec3(drand2f(i * 555u + 888u) - 1.0, 0.0);
-        vec3 gd = normalize(er * focus_distance - go);
-        ro += go.x * uu + go.y * vv;
-        rd += gd.x * uu + gd.y * vv;
-
-        // accumulate path
-        col += ray_color(ro, normalize(rd));
-    }
-    col = col / float(N_SAMPLES);
-
-    // apply gamma correction
-    col = pow(col, gamma);
-    return col;
-}
-
 void main(void) {
-    vec2 Z = M + zoom * (pixf + jitter_amount * rand2(11u));
-    float grey = rand0(77u);
-    vec3 color = vec3(grey);
-    gl_FragColor = vec4(color, 1.0);
+  const uint N_SAMPLES = 32u;
+  const float fov = 2.5;
+  const float focus_distance = 5.0;
+  const float blur_amount = 0.0; // 0.0015;
+
+  vec3 camera = vec3(0.0, 1.0, -10.0);
+  vec3 uu = vec3(1.0, 0.0, 0.0);   // right axis
+  vec3 vv = vec3(0.0, -1.0, 0.0);  // up axis
+  vec3 ww = vec3(0.0, 0.0, 1.0);   // front axis
+
+  vec3 col = vec3(0.0);
+  for(uint i = 0u; i < N_SAMPLES; i++) {
+      vec2 p = vertTexCoord.xy + jitter_amount * (drand2f(i + 7u) - 1.0); // screen coords with antialiasing
+
+      // create ray with depth of field
+      vec3 er = normalize(vec3(p.xy, fov));
+      vec3 rd = er.x * uu + er.y * vv + er.z * ww;
+
+      vec3 go = blur_amount * vec3(drand2f(i * 555u + 888u) - 1.0, 0.0);
+      vec3 gd = normalize(er * focus_distance - go);
+      vec3 ro = go.x * uu + go.y * vv + camera;
+      //rd += gd.x * uu + gd.y * vv;
+
+      // accumulate path
+      col += ray_color(ro, normalize(rd));
+  }
+  col = col / float(N_SAMPLES);
+
+  // apply gamma correction
+  col = pow(col, gamma);
+  gl_FragColor = vec4(col, 1.0);
 }

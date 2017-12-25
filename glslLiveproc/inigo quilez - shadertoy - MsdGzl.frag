@@ -164,23 +164,10 @@ vec3 calculateColor(vec3 ro, vec3 rd, float sa )
     vec3 colorMask = vec3(1.0);
     vec3 accumulatedColor = vec3(0.0);
 
-    float fdis = 0.0;
-    for( int bounce = 0; bounce<3; bounce++ ) // bounces of GI
-    {
-        //rd = normalize(rd);
-       
-        //-----------------------
-        // trace
-        //-----------------------
-        float t = intersect( ro, rd );
-        if( t < 0.0 )
-        {
-            if( bounce==0 ) return mix( 0.05*vec3(0.9,1.0,1.0), skyCol, smoothstep(0.1,0.25,rd.y) );
-            break;
-        }
-
-        if( bounce==0 ) fdis = t;
-
+    float t0 = intersect( ro, rd );
+    float t = t0;
+    if( t < 0.0 ) return mix(0.05*vec3(0.9, 1.0, 1.0), skyCol, smoothstep(0.1, 0.25, rd.y));
+    for( int bounce = 0; t >= 0.0 && bounce < 3; bounce++ ) { // bounces of GI
         vec3 pos = ro + rd * t;
         vec3 nor = calcNormal( pos );
         vec3 surfaceColor = vec3(0.4)*vec3(1.2,1.1,1.0);
@@ -206,28 +193,15 @@ vec3 calculateColor(vec3 ro, vec3 rd, float sa )
 
         accumulatedColor += colorMask * iColor;
 
-        //-----------------------
-        // calculate new ray
-        //-----------------------
-        //float isDif = 0.8;
-        //if( hash(sa + 1.123 + 7.7*float(bounce)) < isDif )
-        {
-           rd = cosineDirection(76.2 + 73.1*float(bounce) + sa + 17.7*float(iFrame), nor);
-        }
-        //else
-        {
-        //    float glossiness = 0.2;
-        //    rd = normalize(reflect(rd, nor)) + uniformVector(sa + 111.123 + 65.2*float(bounce)) * glossiness;
-        }
+        rd = cosineDirection(76.2 + 73.1*float(bounce) + sa + 17.7*float(iFrame), nor);
 
         ro = pos;
-   }
-
-   float ff = exp(-0.01*fdis*fdis);
-   accumulatedColor *= ff; 
-   accumulatedColor += (1.0-ff)*0.05*vec3(0.9,1.0,1.0);
-
-   return accumulatedColor;
+        t = intersect(ro, rd);
+    }
+    float ff = exp(-0.01*fdis*fdis);
+    accumulatedColor *= ff; 
+    accumulatedColor += (1.0-ff)*0.05*vec3(0.9,1.0,1.0);
+    return accumulatedColor;
 }
 
 mat3 setCamera( in vec3 ro, in vec3 rt, in float cr )
