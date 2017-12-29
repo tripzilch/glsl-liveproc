@@ -3,7 +3,7 @@ Julia julia;
 PGraphics buf_hi, buf_lo, buf;
 
 void setup() {
-  size(640, 360, P2D);
+  size(720, 440, P2D);
   colorMode(RGB, 1.0);
 
 /*  textureMode(NORMAL);  // unsure if needed
@@ -13,7 +13,7 @@ void setup() {
   buf_lo = createGraphics(width / 2, height / 2, P2D);
   buf = buf_hi; // buf_lo;
 
-  julia = new Julia("pathtrace.frag", "tex/schaap.png");
+  julia = new Julia("pathtrace.frag", "tex/old-industrial-hall4k.jpg");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
   println(" ------ Commands:");
@@ -84,10 +84,12 @@ class Julia {
     void set(String k, int x) {
       this.frag.set(k, x);
       this.par.setInt(k, x);
+      //println("Set int " + k + "=" + x);
     }
     void set(String k, float x) {
       this.frag.set(k, x);
       this.par.setFloat(k, x);
+      //println("Set float " + k + "=" + x);
     }
     void set(String k, float x, float y) {
       this.frag.set(k, x, y);
@@ -131,14 +133,14 @@ class Julia {
 int reload_frame = 1, pmode = 0;
 boolean paused = false, dirty = true;
 int not_dirty_count = 0, count = 0, subs = 1, sub_i = 0;
-float Cr = 0.38276052,
-      Ci = -0.05781254,
+float Cr = 0.0,
+      Ci = 0.0,
       min_iter = 0,
-      zoom = 0.8711997270584106,
-      Mx = 0.084953114,
-      My = 0.01834692,
-      Px = -.15,
-      Py = -.175,
+      zoom = 8.0,
+      Mx = 25.0,
+      My = 19.0,
+      Px = 1.0,
+      Py = -1.0,
       tangle = -1.1399999856948853,
       bw_threshold = 0.5,
       dissolve = 0.5,
@@ -157,12 +159,12 @@ void draw() {
     if (reload_frame >= 1) { tint(0.5); reload_frame--; }
 
     if (pmode == 1) {
-      Cr = lerp(-2.2, 1.2, (1.0 * mouseX) / W);
-      Ci = lerp(-1.5, 1.5, (1.0 * mouseY) / H);
+      Cr = (2.0 * mouseX - W) / H;
+      Ci = (2.0 * mouseY - H) / H;
     }
     if (pmode == 2) {
-      Px = 3 * (2.0 * mouseX - W) / H;
-      Py = 3 * (2.0 * mouseY - H) / H;
+      Px = (2.0 * mouseX - W) / H;
+      Py = (2.0 * mouseY - H) / H;
     }
 
     julia.set("C", OCr + czoom * Cr, OCi + czoom * Ci);
@@ -174,42 +176,42 @@ void draw() {
     julia.set("tex_zoom", tzoom);
     julia.set("count", (float) count);
     julia.set("alpha", 1.0);
-    julia.set("jitter_amount", 0.5 / buf.height);
+    julia.set("jitter_amount", 1.0 / buf.height);
 
     not_dirty_count++;
     boolean dirty_now = dirty || (pmouseX != mouseX) || (pmouseY != mouseY);
     dirty = false;
     if (dirty_now) not_dirty_count = 0;
 
-    /*if (not_dirty_count == 0) {
+    if (not_dirty_count == -1) {
       buf = buf_lo;
       subs = 1; n_samples = subs * subs;
       sub_i = 0;
-      println("");
-      print("LO N = ", subs * subs);
-    } else if (not_dirty_count == 1) {
+      // println("");
+      // print("LO N = ", subs * subs);
+    } else if (not_dirty_count == 0) {
       buf = buf_hi;
       subs = 1; n_samples = subs * subs;
       sub_i = 0;
-      print("|| HI N = ", subs * subs);
+      // print("|| HI N = ", subs * subs);
     } else if (sub_i < subs * subs) {
       sub_i++;
-      print(", ", subs * subs - sub_i);
+      // print(", ", subs * subs - sub_i);
     } else if (subs > 0 && subs < 8) {
       subs *= 2; n_samples = subs * subs;
       sub_i = 0;
-      print("|| HI N = ", subs * subs);
+      // print("|| HI N = ", subs * subs);
     } else {
       subs = 0;
     }
-    julia.set("N_SAMPLES", n_samples);
-
+    julia.set("N_SAMPLES", (n_samples + 2) * 64);
     if (subs > 0) {
       julia.render(buf, subs, subs, sub_i);
       image(buf, 0, 0, W, H);
-    }*/
-    julia.render(buf, subs, subs, sub_i);
-    image(buf, 0, 0, W, H);
+    }
+    //julia.set("N_SAMPLES", 256);
+    //julia.render(buf, subs, subs, sub_i);
+    //image(buf, 0, 0, W, H);
   }
 }
 
@@ -335,7 +337,7 @@ void keyPressed() {
     println(timestamp(), " === RENDERING *" + mul + " @ " + pg.width + "x" + pg.height);
     julia.set("jitter_amount", 0.5 / pg.height);
     julia.set("alpha", 1.0);
-    julia.set("N_SAMPLES", 64);
+    // julia.set("N_SAMPLES", 64);
     int subs = 10, sub_i = 0;
     int blocks = subs * subs;
     print(blocks, "blocks.. ");

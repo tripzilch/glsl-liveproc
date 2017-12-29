@@ -16,6 +16,7 @@ uniform float bw_threshold;
 uniform float tex_angle;
 uniform float alpha;
 uniform float jitter_amount;
+uniform int N_SAMPLES;
 
 varying vec4 vertColor;
 varying vec4 vertTexCoord;
@@ -82,7 +83,7 @@ vec3 cos_hemi(vec3 n, uint i) {
   //vec2 uv = vec2(hash_state.ba) * vec2(TAU * r232, r231) + vec2(0.0, -1.0); // (0..TAU, -1..1)
   vec2 uv = rand2f(1112u * i);
   uv.x *= TAU;
-  uv.y = uv.y * 2 - 1;
+  uv.y = uv.y * 2.0 - 1.0;
   vec3 p = vec3(sqrt(1.0 - uv.y * uv.y) * vec2(cos(uv.x), sin(uv.x)), uv.y);
   return normalize(n + p);
 }
@@ -107,24 +108,72 @@ float sd_torus(vec3 p, vec2 t) {
 }
 
 float sd_plane(vec3 p, vec4 n) { // n must be normalized
-return dot(p, n.xyz) + n.w; 
+  return dot(p, n.xyz) + n.w; 
 }
 
+float ud_roundbox(vec3 p, vec3 b, float r) {
+  return length(max(abs(p)-b, 0.0)) - r;
+}
+
+float sd_cylinder(vec3 p, vec3 c) {
+  return length(p.xz - c.xy) - c.z;
+}
+
+float sd_capsule(vec3 p, vec3 a, vec3 b, float r) {
+  vec3 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - r;
+}
+
+float sd_ellipsoid(vec3 p, vec3 r) {
+  return (length(p / r) - 1.0) * min(min(r.x, r.y), r.z);
+}
 // -- scene and distance estimation
 
+const vec3 obj_colors[] = vec3[](
+  vec3(1.0,0.9,0.8),
+  vec3(0.9,1.0,0.5),
+  vec3(0.4,0.9,1.0),
+  vec3(0.7,0.8,0.9),
+  vec3(0.7,0.3,0.95));
+
 float DE(vec3 p) {
-  float d = sd_plane(p, vec4(0.0, 1.0, 0.0, 0.0));
-  d = min(d, sd_sphere(p - vec3(0.0, 1.0, 0.0), 1.0));
+  float d;
+  //d = max(sd_plane(p, vec4(0.0, 1.0, 0.0, 0.0)), sd_cylinder(p, vec3(0.0, 0.0, 18.0)));
+  // d = -sd_sphere(p - vec3(0.0), 128.0); // skysphere
+  d = sd_ellipsoid(p - vec3(0.0, -3.0, 0.0), vec3(18.0, 3.0, 18.0));
+  d = min(d, sd_sphere(p - vec3(5.0, 4.0, 0.0), 2.0));
+  d = min(d, sd_sphere(p - vec3(-3.5, 4.0, -3.5), 4.0));
+  d = min(d, sd_torus(p - vec3(0.0, 4.0, 0.0), vec2(5.0, 0.5)));
+  d = min(d, sd_box(p - vec3(4.0, 0.0, 0.0), vec3(3.0, 2.0, 10.0)));
   return d;
 }
 
-const float d_max = 64.0;
+int obj_id(vec3 p) {
+  int i;
+  float d, f;
+  // d = -sd_sphere(p - vec3(0.0), 128.0); // skysphere
+  // i = -1;
+  d = sd_ellipsoid(p - vec3(0.0, -3.0, 0.0), vec3(18.0, 3.0, 18.0));
+  i = 0;
+  f = sd_sphere(p - vec3(5.0, 4.0, 0.0), 2.0);
+  if (f < d) { d = f; i = 1; }
+  f = sd_sphere(p - vec3(-3.5, 4.0, -3.5), 4.0);
+  if (f < d) { d = f; i = 2; }
+  f = sd_torus(p - vec3(0.0, 4.0, 0.0), vec2(5.0, 0.5));
+  if (f < d) { d = f; i = 3; }
+  f = sd_box(p - vec3(4.0, 0.0, 0.0), vec3(3.0, 2.0, 10.0));
+  if (f < d) { d = f; i = 4; }
+  return i;
+}
+
+const float d_max = 128.0;
 float intersect(vec3 p, vec3 r) {
     float d = 0.01;
     for(int i = 0; i < 128; i++) {
-        float h = DE(p + r * d);
-        if(h < 0.0001 || d > d_max) break;
-        d += h;
+        float step = DE(p + r * d);
+        if(step < 0.0001 || d > d_max) break;
+        d += step;
     }    
     return min(d, d_max);
 }
@@ -139,18 +188,29 @@ vec3 calc_normal(vec3 p) {
 
 // -- lights
 
-const vec3 sundir = vec3(-.3, -.8, -.1);
+const vec3 sundir = normalize(vec3(-.2, .9, -.6));
+const vec3 moondir = normalize(vec3(-.2, .2, .8));
 const vec3 sky = vec3(.2, .2, .7);
-const vec3 sky2 = vec3(.03, .03, .2);
+const vec3 sky2 = vec3(.03, .03, .1);
 const vec3 mist = vec3(.3, .25, .35);
-const vec3 sun = vec3(1.0, 1.0, .7) * 8.0;
+const vec3 sun = vec3(1.0, 1.0, .7) * 2.0;
+const vec3 moon = vec3(0.5, 0.7, 1.0) * 4.0;
 
 vec3 skycolor(vec3 r) {
-  float s = pow(dot(r, sundir), 8.0);
-  vec3 c = mix(sky2, sky, smoothstep(0.0, 1.0, s));
-  c = mix(c, mist, smoothstep(0.6, 1.0, 1.0 / (1.0 + r.y)));
-  c = mix(c, sun, smoothstep(0.7, 0.9, s * s));
-  return c;//vec3(max(vec2(0.0), r.yy), 1.0);
+  // vec3 c = mix(sky2, sky, smoothstep(0.0, 1.0, s));
+  // c = mix(c, mist, smoothstep(0.6, 1.0, 1.0 / (1.0 + r.y)));
+  // c = mix(c, sun, smoothstep(0.7, 0.9, s * s));
+  // return c;//vec3(max(vec2(0.0), r.yy), 1.0);
+  
+  //vec3 c = vec3(0.0);
+  //c = mix(c, sky2, smoothstep(0.0, 0.5, r.y));
+  //c = mix(c, sun, smoothstep(.8, .9, pow(dot(r, sundir), 8.0)));
+  ////c = mix(c, moon, smoothstep(.8, 1.0, pow(dot(r, moondir), 4.0)));
+  //return c;
+  //return tex(vec2(atan(r.x, r.z) / TAU, -r.y * 0.5));
+  vec3 t = tex(vec2(atan(r.x, r.z) / TAU, -r.y * 0.5 - 0.05));
+  //vec3 sunlight = smoothstep(.5, .7, dot(r, sundir)) * vec3(1.0, 1.0, 1.0);
+  return t;
 }
 
 // vec3 pos_light(vec3 p, vec3 n) {
@@ -161,14 +221,18 @@ vec3 skycolor(vec3 r) {
 // -- material
 
 vec3 pos_color(vec3 p, vec3 n) {
-  return vec3(0.6) * vec3(1.0, 0.9, 0.8);
+  return obj_colors[obj_id(p)]; // vec3(0.6) * vec3(1.0, 0.9, 0.8);
 }
 
 vec3 ray_bounce(vec3 p, vec3 n, vec3 r) {
-  //vec3 rr = reflect(rd, n);
-  //b = ((2 + dot(rr, p)) * 0.5) ** 4
-  //p = normalize(normalize(n + p) + b * rr)
-  return cos_hemi(n, 7721u);
+  vec2 uv = rand2f(1112u);
+  uv.x *= TAU;
+  uv.y = uv.y * 2.0 - 1.0;
+  vec3 rh = vec3(sqrt(1.0 - uv.y * uv.y) * vec2(cos(uv.x), sin(uv.x)), uv.y);
+  vec3 rr = reflect(r, n);
+  float b = pow((2.0 + dot(rr, rh)) * 0.5, 16.0);
+  return normalize(normalize(n + rh) + b * rr);
+  //return cos_hemi(n, 7721u);
 }
 
 // -- global illumination pathtracer
@@ -176,36 +240,39 @@ vec3 ray_bounce(vec3 p, vec3 n, vec3 r) {
 const uint num_levels = 4u;
 vec3 ray_color(vec3 p, vec3 r) {
     vec3 mcol = vec3(1.0);
-    vec3 n;
+    vec3 acol = vec3(0.0);
 
     // iteratively create num_levels bounces of global illumination
     for (uint i = 0u; i < num_levels; i++) {
       float d = intersect(p, r);
-      if(d >= d_max) { // we hit the sky
-        return mcol * skycolor(r); 
-      }      
+      if(d >= d_max) { // we hit nothing
+        acol = skycolor(r);       
+        break;
+      } 
       p += r * d;
-      n = calc_normal(p);
+      vec3 n = calc_normal(p);
       vec3 surface_color = pos_color(p, n);
+      r = ray_bounce(p, n, r);
       mcol *= surface_color;
-      
-      r = ray_bounce(p, n, r);   
+      // acol += mcol * light;   
     }
 
-    return vec3(0.0, 0.0, 0.0);
+    return acol * mcol;
 }
 
 // compute the color of a pixel
 void main(void) {
-  const uint N_SAMPLES = 32u;
-  const float fov = 2.5;
-  const float focus_distance = 5.0;
-  const float blur_amount = 0.0; // 0.0015;
+  const float fov = 2.0;
+  const float focus_distance = 4.0;
+  const float blur_amount = 0.00;
 
-  vec3 camera = vec3(0.0, 1.0, -10.0);
-  vec3 uu = vec3(1.0, 0.0, 0.0);   // right axis
-  vec3 vv = vec3(0.0, -1.0, 0.0);  // up axis
-  vec3 ww = vec3(0.0, 0.0, 1.0);   // front axis
+  vec3 camera = vec3(M.x, max(0.05, M.y), -25.0);
+  vec3 up = vec3(0.0, 1.0, 0.0);
+  vec3 look_at = vec3(P.x * 5.0, (P.y + 1.0) * 4.0, 0.0);
+
+  vec3 ww = normalize(look_at - camera);  // right axis
+  vec3 uu = normalize(cross(up, ww));     // up axis
+  vec3 vv = normalize(cross(ww, uu));     // front axis
 
   vec3 col = vec3(0.0);
   for(uint i = 0u; i < N_SAMPLES; i++) {
@@ -213,11 +280,13 @@ void main(void) {
 
       // create ray with depth of field
       vec3 er = normalize(vec3(p.xy, fov));
-      vec3 rd = er.x * uu + er.y * vv + er.z * ww;
+      vec3 rd = er.x * uu - er.y * vv + er.z * ww;
 
       vec3 go = blur_amount * vec3(drand2f(i * 555u + 888u) - 1.0, 0.0);
       vec3 gd = normalize(er * focus_distance - go);
       vec3 ro = go.x * uu + go.y * vv + camera;
+      ro += go.x * uu + go.y * vv;
+      rd += gd.x * uu - gd.y * vv + gd.z * ww;
       //rd += gd.x * uu + gd.y * vv;
 
       // accumulate path
