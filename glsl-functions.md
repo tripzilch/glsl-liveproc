@@ -379,6 +379,9 @@ Step
     vec3 step(vec3 edge, vec3 x)
     vec4 step(vec4 edge, vec4 x)
 
+`step(a, b)` returns `a >= b ? 1.0 : 0.0`    
+`step(a, b)` returns `b < a ? 0.0 : 1.0`    
+
 The **step** function returns 0.0 if x is smaller then edge and otherwise 1.0. The input parameters can be floating scalars or float vectors. In case of float vectors the operation is done component-wise.
 
     float step(float edge, float x)
