@@ -4,19 +4,17 @@ precision mediump float;
 
 #define PROCESSING_TEXTURE_SHADER
 uniform sampler2D texture;
-uniform vec2 pix_size; // vec2(1/width,1/height)
-uniform vec2 C;
-uniform vec2 P;
-uniform float min_iter;
-uniform vec2 M;
+uniform vec2 buf_size;
+uniform vec2 tex_size;
+uniform vec4 tile_rect;
 uniform float count;
-uniform float zoom;
-uniform float tex_zoom;
-uniform float bw_threshold;
-uniform float tex_angle;
 uniform float alpha;
-uniform float jitter_amount;
 uniform int N_SAMPLES;
+
+uniform vec3 camera_pos;
+uniform vec3 uu;
+uniform vec3 vv;
+uniform vec3 ww;
 
 varying vec4 vertColor;
 varying vec4 vertTexCoord;
@@ -28,7 +26,19 @@ const float PHI = 1.618033988749895;
 const float sq2 = 1.4142135623730951;
 const float isq2 = 0.7071067811865476;
 
-vec3 tex(vec2 p) { return pow(texture2D(texture, p + .5).xyz, igamma); }
+// #define ROTX(phi) (mat3(             \
+//     vec3(1.,       0.,        0.),   \
+//     vec3(0., cos(phi), -sin(phi)),   \
+//     vec3(0., sin(phi),  cos(phi))))
+// 
+// #define ROTX(phi) (mat3(             \
+//     vec3(1.,       0.,        0.),   \
+//     vec3(0., cos(phi), -sin(phi)),   \
+//     vec3(0., sin(phi),  cos(phi))))
+
+vec3 tex(vec2 p) { 
+  return pow(textureGrad(texture, p + .5, vec2(1., 0.) / tex_size.x, vec2(0., 1.) / tex_size.y).xyz, igamma);
+}
 
 // --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ----
 // Multiplicative hash primes
@@ -76,7 +86,7 @@ vec4 drand4f(uint k) { hash(k); return vec4(hash_state.xyzw) * r231; }
 
 // --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ---- --- ----
 
-// -- Special random functions
+// ======== Special random functions
 
 vec3 cos_hemi(vec3 n, uint i) {
   //hash(1112u * i);
@@ -88,7 +98,7 @@ vec3 cos_hemi(vec3 n, uint i) {
   return normalize(n + p);
 }
 
-// -- SD functions
+// ======== (signed) distance functions
 
 float max3(vec3 p ) { return max(p.x, max(p.y, p.z)); }
 
@@ -128,54 +138,68 @@ float sd_capsule(vec3 p, vec3 a, vec3 b, float r) {
 float sd_ellipsoid(vec3 p, vec3 r) {
   return (length(p / r) - 1.0) * min(min(r.x, r.y), r.z);
 }
-// -- scene and distance estimation
 
+const float sh = sin(.6);
+const float ch = cos(.6);
+float sd_heart(vec3 p) {
+  p.x = abs(p.x);
+  p.xy = vec2(p.x * ch - p.y * sh - 1.0, p.y * ch + p.x * sh);
+  p.z += 3.0;
+  return sd_ellipsoid(p, vec3(3.5, 7.0, 1.0));
+}
+#define ROTX(phi) (mat3(             \
+    vec3(1.,       0.,        0.),   \
+    vec3(0., cos(phi), -sin(phi)),   \
+    vec3(0., sin(phi),  cos(phi))))
+
+// ======== scene and distance estimation
+
+// colors
+const vec3 sky = vec3(.2, .2, .7);
+const vec3 sky2 = vec3(.03, .03, .1);
+const vec3 mist = vec3(.3, .25, .35);
+const vec3 sun = vec3(1.0, 1.0, .7);
+const vec3 moon = vec3(0.5, 0.7, 1.0);
 const vec3 obj_colors[] = vec3[](
-  vec3(1.0,0.9,0.8),
-  vec3(0.9,1.0,0.5),
-  vec3(0.4,0.9,1.0),
+  vec3(0.12,0.11,0.3),
   vec3(0.7,0.8,0.9),
+  vec3(0.98,0.05,0.12),
+  vec3(0.4,0.9,1.0),
   vec3(0.7,0.3,0.95));
 
-float DE(vec3 p) {
-  float d;
-  //d = max(sd_plane(p, vec4(0.0, 1.0, 0.0, 0.0)), sd_cylinder(p, vec3(0.0, 0.0, 18.0)));
-  // d = -sd_sphere(p - vec3(0.0), 128.0); // skysphere
-  d = sd_ellipsoid(p - vec3(0.0, -3.0, 0.0), vec3(18.0, 3.0, 18.0));
-  d = min(d, sd_sphere(p - vec3(5.0, 4.0, 0.0), 2.0));
-  d = min(d, sd_sphere(p - vec3(-3.5, 4.0, -3.5), 4.0));
-  d = min(d, sd_torus(p - vec3(0.0, 4.0, 0.0), vec2(5.0, 0.5)));
-  d = min(d, sd_box(p - vec3(4.0, 0.0, 0.0), vec3(3.0, 2.0, 10.0)));
-  return d;
+
+// scene (DE function and obj_id function)
+#define OBJ1(p) sd_ellipsoid(p - vec3(0.0, -3.0, 0.0), vec3(18.0, 3.0, 18.0))
+#define OBJ2(p) sd_torus(p - vec3(0.0, 1.5, 0.0), vec2(10.0, 0.3))
+#define OBJ3(p) sd_heart(p - vec3(0.0, 7.0, 0.0))
+
+float DE(vec3 p) { 
+  return min(OBJ1(p), min(OBJ2(p), OBJ3(p))); 
 }
 
 int obj_id(vec3 p) {
   int i;
   float d, f;
-  // d = -sd_sphere(p - vec3(0.0), 128.0); // skysphere
-  // i = -1;
-  d = sd_ellipsoid(p - vec3(0.0, -3.0, 0.0), vec3(18.0, 3.0, 18.0));
+  d = OBJ1(p);
   i = 0;
-  f = sd_sphere(p - vec3(5.0, 4.0, 0.0), 2.0);
+  f = min(d, OBJ2(p));
   if (f < d) { d = f; i = 1; }
-  f = sd_sphere(p - vec3(-3.5, 4.0, -3.5), 4.0);
+  f = min(d, OBJ3(p));
   if (f < d) { d = f; i = 2; }
-  f = sd_torus(p - vec3(0.0, 4.0, 0.0), vec2(5.0, 0.5));
-  if (f < d) { d = f; i = 3; }
-  f = sd_box(p - vec3(4.0, 0.0, 0.0), vec3(3.0, 2.0, 10.0));
-  if (f < d) { d = f; i = 4; }
   return i;
 }
 
+// tracing
 const float d_max = 128.0;
 float intersect(vec3 p, vec3 r) {
-    float d = 0.01;
+    float d = .01;
     for(int i = 0; i < 128; i++) {
-        float step = DE(p + r * d);
-        if(step < 0.0001 || d > d_max) break;
+        float step = DE(r * d + p);
         d += step;
-    }    
-    return min(d, d_max);
+        if (step < 0.0001 || d > d_max) break;
+    }
+    d = min(d, d_max);
+    return d;
 }
 
 vec3 calc_normal(vec3 p) {
@@ -186,39 +210,20 @@ vec3 calc_normal(vec3 p) {
       DE(p + eps.yyx) - DE(p - eps.yyx)));
 }
 
-// -- lights
-
+// ======== lights
 const vec3 sundir = normalize(vec3(-.2, .9, -.6));
-const vec3 moondir = normalize(vec3(-.2, .2, .8));
-const vec3 sky = vec3(.2, .2, .7);
-const vec3 sky2 = vec3(.03, .03, .1);
-const vec3 mist = vec3(.3, .25, .35);
-const vec3 sun = vec3(1.0, 1.0, .7) * 2.0;
-const vec3 moon = vec3(0.5, 0.7, 1.0) * 4.0;
+const vec3 moondir = normalize(vec3(-.2, .6, .8));
 
 vec3 skycolor(vec3 r) {
-  // vec3 c = mix(sky2, sky, smoothstep(0.0, 1.0, s));
-  // c = mix(c, mist, smoothstep(0.6, 1.0, 1.0 / (1.0 + r.y)));
-  // c = mix(c, sun, smoothstep(0.7, 0.9, s * s));
-  // return c;//vec3(max(vec2(0.0), r.yy), 1.0);
-  
-  //vec3 c = vec3(0.0);
-  //c = mix(c, sky2, smoothstep(0.0, 0.5, r.y));
-  //c = mix(c, sun, smoothstep(.8, .9, pow(dot(r, sundir), 8.0)));
-  ////c = mix(c, moon, smoothstep(.8, 1.0, pow(dot(r, moondir), 4.0)));
-  //return c;
-  //return tex(vec2(atan(r.x, r.z) / TAU, -r.y * 0.5));
-  vec3 t = tex(vec2(atan(r.x, r.z) / TAU, -r.y * 0.5 - 0.05));
-  //vec3 sunlight = smoothstep(.5, .7, dot(r, sundir)) * vec3(1.0, 1.0, 1.0);
-  return t;
+  vec3 c = vec3(0.0);
+  c = mix(c, sky2, smoothstep(0.0, 0.5, r.y));
+  c = mix(c, sun * 4., smoothstep(.8, .9, pow(dot(r, sundir), 8.0)));
+  c = mix(c, moon * 2., smoothstep(.8, 1.0, pow(dot(r, moondir), 4.0)));
+  return c;
+  //vec3 t = tex(vec2(atan(r.x, r.z) / TAU, -r.y * 0.5 - 0.05));
 }
 
-// vec3 pos_light(vec3 p, vec3 n) {
-//   intersect(p, cos_hemi(n, 8841u)) > 0.0
-//   return vec3(0.4) * vec3(1.2, 1.1, 1.0);
-// }
-
-// -- material
+// ======== material
 
 vec3 pos_color(vec3 p, vec3 n) {
   return obj_colors[obj_id(p)]; // vec3(0.6) * vec3(1.0, 0.9, 0.8);
@@ -230,12 +235,27 @@ vec3 ray_bounce(vec3 p, vec3 n, vec3 r) {
   uv.y = uv.y * 2.0 - 1.0;
   vec3 rh = vec3(sqrt(1.0 - uv.y * uv.y) * vec2(cos(uv.x), sin(uv.x)), uv.y);
   vec3 rr = reflect(r, n);
-  float b = pow((2.0 + dot(rr, rh)) * 0.5, 16.0);
+  float b = pow((2.0 + dot(rr, rh)) * 0.5, 2.0);
   return normalize(normalize(n + rh) + b * rr);
   //return cos_hemi(n, 7721u);
 }
 
-// -- global illumination pathtracer
+// ======== global illumination pathtracer
+
+// void bounce(vec3 p, vec3 r) {
+//   float d = intersect(p, r); // writes p += r * d;
+//   p += r * d;
+//   if(d >= d_max) { // we hit nothing
+//     acol += skycolor(r);       
+//     break;
+//   } 
+//   vec3 n = calc_normal(p);
+//   vec3 surface_color = pos_color(p, n);
+//   mcol *= surface_color;
+//   // acol += mcol * light
+//   r = ray_bounce(p, n, r);
+//   // out: p, r, acol, mcol     
+// }
 
 const uint num_levels = 4u;
 vec3 ray_color(vec3 p, vec3 r) {
@@ -244,20 +264,31 @@ vec3 ray_color(vec3 p, vec3 r) {
 
     // iteratively create num_levels bounces of global illumination
     for (uint i = 0u; i < num_levels; i++) {
+      // in: p, r, acol, mcol
       float d = intersect(p, r);
+      p += r * d;
       if(d >= d_max) { // we hit nothing
-        acol = skycolor(r);       
+        acol += skycolor(r);       
         break;
       } 
-      p += r * d;
       vec3 n = calc_normal(p);
       vec3 surface_color = pos_color(p, n);
-      r = ray_bounce(p, n, r);
       mcol *= surface_color;
-      // acol += mcol * light;   
+      // acol += mcol * light
+      r = ray_bounce(p, n, r);
+      // out: p, r, acol, mcol   
     }
 
     return acol * mcol;
+}
+
+mat3 setCamera( in vec3 ro, in vec3 rt, in float cr )
+{
+    vec3 cw = normalize(rt-ro);
+    vec3 cp = vec3(sin(cr), cos(cr),0.0);
+    vec3 cu = normalize( cross(cw,cp) );
+    vec3 cv = normalize( cross(cu,cw) );
+    return mat3( cu, cv, -cw );
 }
 
 // compute the color of a pixel
@@ -266,28 +297,39 @@ void main(void) {
   const float focus_distance = 4.0;
   const float blur_amount = 0.00;
 
-  vec3 camera = vec3(M.x, max(0.05, M.y), -25.0);
+  vec3 camera_pos = vec3(2.5, 10., -25.);
+  vec3 look_at = vec3(0., 5., 0.);
   vec3 up = vec3(0.0, 1.0, 0.0);
-  vec3 look_at = vec3(P.x * 5.0, (P.y + 1.0) * 4.0, 0.0);
 
-  vec3 ww = normalize(look_at - camera);  // right axis
-  vec3 uu = normalize(cross(up, ww));     // up axis
-  vec3 vv = normalize(cross(ww, uu));     // front axis
+  vec3 ww = normalize(look_at - camera_pos);  // front axis
+  vec3 uu = normalize(cross(up, ww));     // right axis
+  vec3 vv = normalize(cross(ww, uu));     // up axis
+  
+//  mat3 camera_matrix = mat3(
+//    vec3( 1.,  0.,  0.),  // ::  uu * er.x |p.x|
+//    vec3( 0., -1.,  0.),  // :: -vv * er.y |p.y|
+//    vec3( 0.,  0.,  1.)); // ::  ww * er.z |fov|
+//
+  mat3 camera_matrix = mat3(uu, -vv, ww);
+
+  // float a = count * 0.005;
+  // camera_matrix = ROTX(a) * camera_matrix;
 
   vec3 col = vec3(0.0);
   for(uint i = 0u; i < N_SAMPLES; i++) {
-      vec2 p = vertTexCoord.xy + jitter_amount * (drand2f(i + 7u) - 1.0); // screen coords with antialiasing
+      vec2 p = vertTexCoord.xy + (drand2f(i + 7u) - 1.0) / buf_size.y; // screen coords with antialiasing
 
       // create ray with depth of field
       vec3 er = normalize(vec3(p.xy, fov));
-      vec3 rd = er.x * uu - er.y * vv + er.z * ww;
+      //vec3 rd = uu * er.x - vv * er.y + ww * er.z;
 
-      vec3 go = blur_amount * vec3(drand2f(i * 555u + 888u) - 1.0, 0.0);
-      vec3 gd = normalize(er * focus_distance - go);
-      vec3 ro = go.x * uu + go.y * vv + camera;
-      ro += go.x * uu + go.y * vv;
-      rd += gd.x * uu - gd.y * vv + gd.z * ww;
-      //rd += gd.x * uu + gd.y * vv;
+      //vec3 ao = blur_amount * vec3(drand2f(i * 555u + 888u) - 1.0, 0.0);
+      //vec3 ad = normalize(er * focus_distance - ao);
+      
+      vec3 ro = camera_pos;
+      vec3 rd = camera_matrix * er;
+      //ro += ao.x * uu + ao.y * vv;
+      //rd += ad.x * uu + ad.y * vv;
 
       // accumulate path
       col += ray_color(ro, normalize(rd));
@@ -295,6 +337,6 @@ void main(void) {
   col = col / float(N_SAMPLES);
 
   // apply gamma correction
-  col = pow(col, gamma);
-  gl_FragColor = vec4(col, 1.0);
+  // col = pow(col, gamma);
+  gl_FragColor = vec4(col + (rand3f(11u) - rand3f(26u)) / 256.0, alpha);
 }

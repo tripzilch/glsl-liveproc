@@ -414,19 +414,19 @@ vec4 rand(vec2 A,vec2 B,vec2 C,vec2 D){
 
 
 
-float noise(vec2 coord,float d){
+float noise(vec2 coord, float d) {
     vec2 C[4];
-    float d1 = 1.0/d;
-    C[0]=floor(coord*d)*d1;
-    C[1]=C[0]+vec2(d1,0.0);
-    C[2]=C[0]+vec2(d1,d1);
-    C[3]=C[0]+vec2(0.0,d1);
-    vec2 p=fract(coord*d);
-    vec2 q=1.0-p;
-    vec4 w=vec4(q.x*q.y,p.x*q.y,p.x*p.y,q.x*p.y);
-    return dot(vec4(rand(C[0],C[1],C[2],C[3])),w);
+    float d1 = 1.0 / d;
+    C[0] = floor(coord * d) * d1;
+    C[1] = C[0] + vec2(d1, 0.0);
+    C[2] = C[0] + vec2(d1, d1);
+    C[3] = C[0] + vec2(0.0, d1);
+    vec2 p = fract(coord * d);
+    vec2 q = 1.0 - p;
+    vec4 w = vec4(q.x * q.y, p.x * q.y, p.x * p.y, q.x * p.y);
+    // pq.zxxz * pq.wwyy
+    return dot(vec4(rand(C[0], C[1], C[2], C[3])), w);
 }
-
 /*
 vec4 get_noise_color(vec2 a) {
        float level= -1.0 -log2 (min(length(dFdx(a)),length(dFdy(a))));

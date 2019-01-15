@@ -345,8 +345,8 @@ The **clamp** function returns x if it is larger than minVal and smaller than ma
 
     float clamp(float x, float minVal, float maxVal)
     vec2 clamp(vec2 x, float minVal, float maxVal)
-    vec3 clamp(vec3 x, float minVal, float maxVal)
-    vec4 clamp(vec4 x, flfloat minVal, float maxVal)
+    vec3 clamp(vec3 x, float minVal, float maxVa
+    vec4 clamp(vec4 x, flfloat minVal float maxVal)
 
 There is also a variation of the **clamp** function where the second and third parameters are always a floating scalars.
 

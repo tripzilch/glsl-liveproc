@@ -16,8 +16,6 @@ void settings() {
 void setup() {
   colorMode(RGB, 1.0);
   buf = createGraphics(width, height, P2D);
-  buf.fill(0);
-  buf.loadPixels();
   julia = new Julia("pathtrace.frag", "tex/old-industrial-hall4k.jpg");
 
   println(timestamp(), " ==== LIVEPROC == ", width + "x" + height, " ===");
@@ -178,8 +176,9 @@ void draw() {
     julia.set("ww", ww());
     double before = millis() / 1000.0;    
     julia.render(buf, 1, 1, 0);
-    loadPixels(); 
+    buf.loadPixels();        
     prof_time += millis() / 1000.0 - before;
+    loadPixels();
     acc_n++;
     dirty = false;
     double ndiv = 255. / acc_n;
@@ -204,12 +203,11 @@ void draw() {
       // sqrt(r) * 255 / sqrt(255 * N)
       // sqrt(r * 255 / N)
     }
-    if (frameCount % 64 == 0) {
-      println("prof_time: ", 1000 * prof_time / 64, "ms");
+    if (frameCount % 256 == 0) {
+      println("prof_time: ", 1000 * prof_time / 256, "ms");
       prof_time = 0.0;
     }
     updatePixels();
-    buf.loadPixels();        
     //image(buf, 0, 0, W, H);
     // not_dirty_count++;
     // boolean dirty_now = dirty || (pmouseX != mouseX) || (pmouseY != mouseY);
